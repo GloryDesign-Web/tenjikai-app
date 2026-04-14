@@ -563,7 +563,7 @@ async function testGS(key){
   const dm={gsurl:'gs-dot',clientgsurl:'gs-client-dot'};
   const url=um[key];if(!url){alert('URLを入力してください');return;}
   document.getElementById(tm[key]).textContent='接続中…';
-  try{await fetch(url,{method:'POST',body:JSON.stringify({_test:true}),headers:{'Content-Type':'application/json'}});document.getElementById(dm[key]).style.background='#4caf50';document.getElementById(tm[key]).textContent='接続OK';}
+  try{await fetch(url,{method:'POST',body:JSON.stringify({_test:true})});document.getElementById(dm[key]).style.background='#4caf50';document.getElementById(tm[key]).textContent='接続OK';}
   catch(e){document.getElementById(dm[key]).style.background='#e53935';document.getElementById(tm[key]).textContent='接続エラー';}
 }
 
@@ -615,7 +615,7 @@ function clearClientSearch(){document.getElementById('client-search').value='';d
 async function doRegisterNewClient(f){
   const nc={...f,id:'c_'+Date.now()};clients.push(nc);currentClientId=nc.id;persist();updateClientButtons();
   if(settings.clientGsUrl){
-    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'add',data:nc}),headers:{'Content-Type':'application/json'}});alert('「'+f.company+'」を登録しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
+    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'add',data:nc,token:settings.token||''})});alert('「'+f.company+'」を登録しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
     catch(e){alert('「'+f.company+'」を登録しました。\nスプレッドシートへの反映に失敗しました。別途ご確認ください。');}
   }else{alert('「'+f.company+'」をアプリ内マスタに登録しました。');}
 }
@@ -629,7 +629,7 @@ function registerNewClient(){
 async function doUpdateClient(idx,f){
   clients[idx]={...clients[idx],...f};persist();
   if(settings.clientGsUrl){
-    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'update',data:clients[idx]}),headers:{'Content-Type':'application/json'}});alert('「'+f.company+'」を更新しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
+    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'update',data:clients[idx],token:settings.token||''})});alert('「'+f.company+'」を更新しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
     catch(e){alert('「'+f.company+'」をアプリ内で更新しました。\nスプレッドシートへの反映に失敗しました。別途ご確認ください。');}
   }else{alert('「'+f.company+'」をアプリ内マスタで更新しました。');}
 }
@@ -791,7 +791,7 @@ async function doSaveOrder(order){
   const st=document.getElementById('sync-status');
   if(settings.gsUrl){
     st.textContent='スプレッドシートに送信中…';
-    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress}),headers:{'Content-Type':'application/json'}});st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
+    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress})});st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
     catch(e){st.textContent='⚠ 送信に失敗しました。CSVでバックアップしてください。';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。\nスプレッドシートへの送信に失敗しました。別途ご確認ください。');}
   }else{st.textContent='※ スプレッドシートURL未設定のため端末内のみに保存しました';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。');}
   editingOrderId=null;currentOrderNum=null;resetForm();
@@ -859,7 +859,7 @@ function confirmDeleteOrder(id){
 async function resend(id){
   const order=orders.find(o=>o.id===id);if(!order)return;
   if(!settings.gsUrl){alert('スプレッドシートURLが設定されていません');return;}
-  try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,token:settings.token||''}),headers:{'Content-Type':'application/json'}});alert('再送信しました');}
+  try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,token:settings.token||''})});alert('再送信しました');}
   catch(e){alert('送信に失敗しました');}
 }
 
