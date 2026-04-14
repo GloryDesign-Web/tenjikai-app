@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>展示会注文入力アプリ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Sans','Yu Gothic','Meiryo',sans-serif;font-size:14px;background:#f5f5f3;color:#1a1a1a;}
+.app{max-width:860px;margin:0 auto;padding:1rem;}
+.event-bar{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.event-label{font-size:12px;color:#888;}
+.event-name{font-size:14px;font-weight:600;color:#1a1a1a;flex:1;}
+.draft-bar{background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:8px 16px;margin-bottom:10px;font-size:13px;color:#e65100;display:none;align-items:center;gap:8px;}
+.draft-bar span{flex:1;}
+.tab-bar{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
+.tab{padding:7px 13px;border-radius:8px;font-size:12px;cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#666;}
+.tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500;}
+.section{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:1.1rem;margin-bottom:10px;}
+.section-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:.9rem;padding-bottom:7px;border-bottom:1px solid #f0f0ee;}
+.order-num-bar{background:#f0f7ff;border:1px solid #b3d9f7;border-radius:8px;padding:7px 14px;margin-bottom:10px;font-size:13px;color:#1565c0;display:none;align-items:center;gap:8px;}
+.order-num-val{font-weight:600;flex:1;}
+label{display:block;font-size:12px;color:#666;margin-bottom:3px;margin-top:8px;}
+label:first-of-type{margin-top:0;}
+input[type=text],input[type=date],input[type=tel],input[type=email],input[type=url],input[type=number],select,textarea{width:100%;font-size:13px;padding:7px 9px;border:1px solid #e0e0e0;border-radius:7px;background:#fff;color:#1a1a1a;outline:none;}
+input[type=number]{-moz-appearance:textfield;}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+textarea{resize:vertical;min-height:55px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.client-search-bar{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.client-search-bar input{flex:1;}
+.client-result{background:#f9f9f7;border:1px solid #e0e0e0;border-radius:8px;max-height:150px;overflow-y:auto;margin-bottom:8px;}
+.client-item{padding:7px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f0f0ee;}
+.client-item:hover{background:#fff;}
+.client-name{font-weight:600;}
+.client-sub{font-size:11px;color:#888;}
+.client-actions{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap;}
+.client-note{font-size:11px;color:#888;}
+.toggle-group{display:flex;gap:4px;margin-top:4px;}
+.toggle-btn{padding:5px 12px;border-radius:7px;font-size:12px;cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#666;}
+.toggle-btn.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.prod-header{display:grid;grid-template-columns:60px 1fr 62px 80px 74px 80px 30px;gap:4px;font-size:11px;color:#888;padding:0 2px;margin-bottom:3px;}
+.prod-row{display:grid;grid-template-columns:60px 1fr 62px 80px 74px 80px 30px;gap:4px;margin-bottom:8px;align-items:start;}
+.prod-thumb{width:56px;height:56px;border-radius:8px;border:1px solid #e0e0e0;background:#f5f5f3;display:flex;align-items:center;justify-content:center;font-size:10px;color:#aaa;cursor:pointer;overflow:hidden;flex-shrink:0;}
+.prod-thumb img{width:100%;height:100%;object-fit:cover;}
+.prod-mid{display:flex;flex-direction:column;gap:3px;}
+.prod-row12{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.ac-wrap{position:relative;}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:8px;z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.1);}
+.ac-item{padding:7px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid #f0f0ee;}
+.ac-item:hover{background:#f5f5f3;}
+.ac-item-model{font-weight:600;}
+.ac-item-sub{font-size:11px;color:#888;}
+.add-btn{background:#fff;border:1.5px dashed #ccc;border-radius:8px;padding:8px;width:100%;font-size:13px;color:#888;cursor:pointer;margin-top:4px;}
+.rm-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;width:30px;height:34px;border-radius:7px;}
+.rm-btn:hover{background:#fff0f0;color:#e53935;}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:.9rem;}
+.metric{background:#f9f9f7;border-radius:8px;padding:9px;}
+.metric-label{font-size:11px;color:#888;margin-bottom:2px;}
+.metric-value{font-size:17px;font-weight:600;color:#1a1a1a;}
+.pay-del-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.subsection{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:1rem;}
+.subsection-title{font-size:14px;font-weight:600;margin-bottom:8px;color:#1a1a1a;}
+.mp-picker{display:flex;gap:6px;}
+.mp-picker select{flex:1;}
+.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.btn{padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#1a1a1a;font-weight:500;}
+.btn:hover{background:#f5f5f3;}
+.btn-success{background:#1a1a1a;border-color:#1a1a1a;color:#fff;}
+.btn-info{background:#e8f4fd;border-color:#b3d9f7;color:#1565c0;}
+.btn-warn{background:#fff8e1;border-color:#ffe082;color:#e65100;}
+.btn-danger-outline{background:#fff;border-color:#ffcdd2;color:#e53935;}
+.btn-sm{padding:5px 11px;font-size:12px;}
+.sync-status{font-size:12px;color:#888;margin-top:6px;min-height:16px;}
+.search-bar{display:flex;gap:8px;margin-bottom:10px;}
+.search-bar input{flex:1;}
+.orders-table,.client-master-table{width:100%;font-size:12px;border-collapse:collapse;}
+.orders-table th,.client-master-table th{text-align:left;padding:7px 8px;border-bottom:1px solid #f0f0ee;color:#888;font-weight:500;background:#f9f9f7;}
+.orders-table td,.client-master-table td{padding:7px 8px;border-bottom:1px solid #f5f5f3;vertical-align:middle;}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#e8f5e9;color:#2e7d32;font-weight:500;}
+.badge-warn{background:#fff8e1;color:#e65100;}
+.empty{text-align:center;padding:2rem;color:#aaa;font-size:13px;}
+.master-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px;margin-top:.8rem;}
+.master-card{border:1px solid #e0e0e0;border-radius:10px;padding:9px;position:relative;background:#fff;}
+.master-img{width:100%;height:85px;background:#f5f5f3;display:flex;align-items:center;justify-content:center;font-size:11px;color:#aaa;margin-bottom:5px;border-radius:6px;overflow:hidden;}
+.master-img img{width:100%;height:100%;object-fit:cover;border-radius:6px;}
+.master-name{font-size:12px;font-weight:600;}
+.master-sub{font-size:11px;color:#888;}
+.master-del{position:absolute;top:5px;right:5px;background:none;border:none;cursor:pointer;color:#ccc;font-size:13px;}
+.master-del:hover{color:#e53935;}
+.setting-grid{display:flex;flex-direction:column;}
+.setting-row{display:grid;grid-template-columns:170px 1fr;gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid #f5f5f3;}
+.setting-row:last-child{border-bottom:none;}
+.setting-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.setting-label{font-size:13px;color:#1a1a1a;font-weight:500;padding-top:2px;}
+.setting-sub{font-size:11px;color:#888;margin-top:2px;font-weight:400;}
+.setting-val{display:flex;flex-direction:column;gap:5px;}
+.row-actions{display:flex;gap:6px;margin-top:2px;}
+.gs-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#888;margin-top:4px;}
+.gs-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;}
+.info-box{background:#e3f2fd;border-radius:8px;padding:9px 12px;font-size:12px;color:#1565c0;margin-top:6px;line-height:1.6;}
+.warn-box{background:#fff8e1;border-radius:8px;padding:9px 12px;font-size:12px;color:#e65100;margin-top:6px;line-height:1.6;}
+.note-box{background:#f3e5f5;border-radius:8px;padding:9px 12px;font-size:12px;color:#6a1b9a;margin-top:6px;line-height:1.6;}
+.success-box{background:#e8f5e9;border-radius:8px;padding:9px 12px;font-size:12px;color:#2e7d32;margin-top:6px;line-height:1.6;}
+.guide-block{border:1px solid #e0e0e0;border-radius:10px;padding:1rem;margin-bottom:1rem;}
+.guide-block-title{font-size:14px;font-weight:600;margin-bottom:10px;color:#1a1a1a;padding-bottom:7px;border-bottom:1px solid #f0f0ee;}
+.guide-step{font-size:13px;color:#333;margin-bottom:5px;padding-left:4px;line-height:1.6;}
+.guide-table{width:100%;font-size:12px;border-collapse:collapse;margin-top:8px;}
+.guide-table th{text-align:left;padding:6px 8px;background:#f5f5f3;color:#666;font-weight:500;}
+.guide-table td{padding:6px 8px;border-bottom:1px solid #f0f0ee;}
+.rec-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#e3f2fd;color:#1565c0;margin-left:6px;}
+.section-sub{font-size:13px;font-weight:600;color:#444;margin:12px 0 6px;padding-top:8px;border-top:1px solid #f5f5f3;}
+.img-mock{background:#f5f5f3;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px;font-family:monospace;font-size:12px;color:#555;line-height:1.8;margin:8px 0;}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:1.5rem;max-width:420px;width:92%;}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:10px;}
+.modal-body{font-size:13px;color:#444;margin-bottom:12px;line-height:1.7;white-space:pre-wrap;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="event-bar">
+  <span class="event-label">展示会名</span>
+  <span class="event-name" id="event-display">（未設定）</span>
+</div>
+<div class="draft-bar" id="draft-bar">
+  <span id="draft-bar-text"></span>
+  <button class="btn btn-sm btn-warn" onclick="showTab('list');filterOrders('draft')">一時保存を確認</button>
+</div>
+<div class="tab-bar">
+  <button class="tab active" onclick="showTab('form')">注文入力</button>
+  <button class="tab" onclick="showTab('list')">受注一覧 <span id="count-badge">(0)</span></button>
+  <button class="tab" onclick="showTab('master')">商品マスタ</button>
+  <button class="tab" onclick="showTab('clients')">取引先マスタ</button>
+  <button class="tab" onclick="showTab('guide')">マスタ登録について</button>
+  <button class="tab" onclick="showTab('settings')">設定</button>
+</div>
+
+<div id="tab-form">
+  <div class="order-num-bar" id="order-num-bar">
+    <span style="font-size:12px;color:#1565c0;opacity:.8;">受注番号</span>
+    <span class="order-num-val" id="order-num-display"></span>
+  </div>
+  <div class="section">
+    <div class="section-title">基本情報</div>
+    <div class="row3">
+      <div><label>注文日 *</label><input type="date" id="order-date"></div>
+      <div><label>弊社担当者名 *</label><input type="text" id="staff" placeholder="担当者名"></div>
+      <div><label>展示会名</label><input type="text" id="event-ro" readonly style="background:#f5f5f3;color:#888;"></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">お取引先様情報</div>
+    <div class="client-search-bar">
+      <input type="text" id="client-search" placeholder="会社名で検索（マスタから呼び出し）" oninput="searchClients()">
+      <button class="btn btn-sm" onclick="clearClientSearch()">クリア</button>
+    </div>
+    <div id="client-results" style="display:none;" class="client-result"></div>
+    <div class="row2">
+      <div><label>会社名 *</label><input type="text" id="company" placeholder="株式会社〇〇" oninput="onClientFieldChange()"></div>
+      <div><label>ご担当者様名</label><input type="text" id="contact-name" placeholder="山田 太郎" oninput="onClientFieldChange()"></div>
+    </div>
+    <div class="row2">
+      <div><label>電話番号</label><input type="tel" id="tel" placeholder="03-0000-0000" oninput="onClientFieldChange()"></div>
+      <div><label>メールアドレス</label><input type="email" id="email" placeholder="example@example.com" oninput="onClientFieldChange()"></div>
+    </div>
+    <label>住所</label>
+    <input type="text" id="address" placeholder="〒000-0000 都道府県市区町村…" oninput="onClientFieldChange()">
+    <label>発送先</label>
+    <div class="toggle-group">
+      <button class="toggle-btn on" id="ship-same" onclick="setShip('same')">住所と同じ</button>
+      <button class="toggle-btn" id="ship-diff" onclick="setShip('diff')">異なる</button>
+    </div>
+    <div id="ship-box" style="display:none;margin-top:6px;">
+      <label>発送先住所</label>
+      <input type="text" id="ship-addr" placeholder="〒000-0000 発送先住所" oninput="onClientFieldChange()">
+    </div>
+    <div class="client-actions" id="client-actions" style="display:none;">
+      <button class="btn btn-sm btn-success" id="client-new-btn" onclick="registerNewClient()" style="display:none;">新規登録</button>
+      <button class="btn btn-sm btn-info" id="client-update-btn" onclick="updateClient()" style="display:none;">マスタを更新</button>
+      <span class="client-note" id="client-note"></span>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">ご注文内容</div>
+    <div class="prod-header">
+      <span>画像</span><span>カテゴリー・型番・素材・サイズ・台帳備考・任意入力欄</span>
+      <span>数量</span><span>単価(税抜)</span><span>掛け率</span><span>小計(掛後)</span><span></span>
+    </div>
+    <div id="prod-rows"></div>
+    <button class="add-btn" onclick="addRow()">＋ 商品を追加</button>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">商品合計(税抜)</div><div class="metric-value" id="m-sub">¥0</div></div>
+      <div class="metric"><div class="metric-label">掛け率後</div><div class="metric-value" id="m-after">¥0</div></div>
+      <div class="metric"><div class="metric-label">消費税(<span id="m-tr">10</span>%)</div><div class="metric-value" id="m-tax">¥0</div></div>
+      <div class="metric"><div class="metric-label">請求金額(税込)</div><div class="metric-value" id="m-total">¥0</div></div>
+    </div>
+  </div>
+  <div class="pay-del-grid">
+    <div class="subsection">
+      <div class="subsection-title">納品納期</div>
+      <div class="toggle-group" style="margin-bottom:8px;">
+        <button class="toggle-btn on" id="del-p" onclick="setDel('period')">期間指定</button>
+        <button class="toggle-btn" id="del-d" onclick="setDel('date')">日付指定</button>
+      </div>
+      <div id="del-period-box"><div class="mp-picker"><select id="del-month"></select><select id="del-timing"><option>上旬</option><option>中旬</option><option>下旬</option></select></div></div>
+      <div id="del-date-box" style="display:none;"><input type="date" id="del-date"></div>
+    </div>
+    <div class="subsection">
+      <div class="subsection-title">支払方法</div>
+      <label>お支払い方法 *</label>
+      <select id="payment"><option value="">--- 選択してください ---</option><option>クレジットカード</option><option>お振込み</option><option>現金</option><option>売掛</option></select>
+      <label style="margin-top:8px;">支払状況</label>
+      <select id="pay-status"><option value="">（未選択）</option><option>お支払済み</option><option>ご入金後の発送</option><option>後日ご請求書発行</option></select>
+    </div>
+  </div>
+  <div class="section"><div class="section-title">特記事項</div><textarea id="notes" placeholder="特記事項があればご記入ください"></textarea></div>
+  <div class="actions">
+    <button class="btn" onclick="resetForm()">クリア</button>
+    <button class="btn btn-warn" onclick="saveDraft()">一時保存</button>
+    <button class="btn btn-success" onclick="saveOrder()">受注を保存 / 送信</button>
+    <button class="btn btn-info" onclick="exportCSV()">CSVダウンロード</button>
+  </div>
+  <div class="sync-status" id="sync-status"></div>
+</div>
+
+<div id="tab-list" style="display:none;">
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div class="section-title" style="margin:0;border:none;padding:0;">受注一覧</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-sm" id="filter-all-btn" onclick="filterOrders('all')">すべて</button>
+        <button class="btn btn-sm" id="filter-draft-btn" onclick="filterOrders('draft')">一時保存のみ</button>
+        <button class="btn btn-sm btn-info" onclick="exportCSV()">CSVダウンロード</button>
+      </div>
+    </div>
+    <div class="search-bar"><input type="text" id="list-search" placeholder="受注番号・会社名・担当者名・型番で検索…" oninput="renderList()"></div>
+    <div id="orders-wrap"><div class="empty">まだ受注データがありません</div></div>
+  </div>
+</div>
+
+<div id="tab-master" style="display:none;">
+  <div class="section">
+    <div class="section-title">商品マスタの取得元</div>
+    <div class="toggle-group" style="margin-bottom:10px;">
+      <button class="toggle-btn on" id="src-sheet" onclick="setMasterSrc('sheet')">スプレッドシートから取得</button>
+      <button class="toggle-btn" id="src-local" onclick="setMasterSrc('local')">このアプリ内（CSV）</button>
+    </div>
+    <div id="master-sheet-area">
+      <div class="info-box">スプレッドシートの「商品マスタ」シートから取得します。設定タブでURLを登録してください。</div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-info" onclick="fetchMasterFromSheet()">スプレッドシートから取得する</button>
+        <button class="btn btn-warn" onclick="fetchMasterFromSheetFull()">全削除して再取得</button>
+      </div>
+      <div id="fetch-status" style="font-size:12px;color:#888;margin-top:5px;"></div>
+      <div class="note-box">アプリ内で編集・削除した内容はアプリ内マスタのみに反映されます。スプレッドシート側を修正した場合は「全削除して再取得」で反映してください。</div>
+    </div>
+    <div id="master-local-area" style="display:none;">
+      <p style="font-size:13px;color:#888;margin-bottom:8px;">フォーマット：カテゴリー, 型番, 素材, 単価（税抜）, 台帳備考</p>
+      <div class="row2">
+        <div><label>CSVファイルを選択</label><input type="file" id="csv-file" accept=".csv" onchange="importCSV(this)"></div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn" onclick="dlTemplate()">テンプレートDL</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+      <div class="section-title" style="margin:0;border:none;padding:0;">登録済み商品 (<span id="master-count">0</span>件)</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm btn-info" onclick="exportMasterCSV()">マスタDL</button>
+        <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteAll('master')">全削除</button>
+      </div>
+    </div>
+    <div class="search-bar"><input type="text" id="master-search" placeholder="カテゴリー・型番・素材で検索…" oninput="renderMaster()"></div>
+    <div id="master-grid" class="master-grid"><div class="empty">商品が登録されていません</div></div>
+  </div>
+</div>
+
+<div id="tab-clients" style="display:none;">
+  <div class="section">
+    <div class="section-title">取引先マスタの取得元</div>
+    <div class="toggle-group" style="margin-bottom:10px;">
+      <button class="toggle-btn on" id="csrc-sheet" onclick="setClientSrc('sheet')">スプレッドシートから取得</button>
+      <button class="toggle-btn" id="csrc-local" onclick="setClientSrc('local')">このアプリ内</button>
+    </div>
+    <div id="client-sheet-area">
+      <div class="info-box">スプレッドシートの「取引先マスタ」シートから取得します。設定タブでURLを登録してください。</div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-info" onclick="fetchClientsFromSheet()">スプレッドシートから取得する</button>
+        <button class="btn btn-warn" onclick="fetchClientsFromSheetFull()">全削除して再取得</button>
+      </div>
+      <div id="client-fetch-status" style="font-size:12px;color:#888;margin-top:5px;"></div>
+      <div class="note-box">「マスタを更新」ボタンはアプリ内データとスプレッドシートの両方を更新します。スプレッドシート側で変更した場合は「全削除して再取得」で反映してください。</div>
+    </div>
+    <div id="client-local-area" style="display:none;">
+      <p style="font-size:13px;color:#888;">注文入力時に取引先情報を入力し「新規登録」でマスタに追加できます。</p>
+    </div>
+  </div>
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+      <div class="section-title" style="margin:0;border:none;padding:0;">取引先マスタ (<span id="clients-count">0</span>件)</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm btn-info" onclick="exportClientCSV()">マスタDL</button>
+        <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteAll('clients')">全削除</button>
+      </div>
+    </div>
+    <div class="search-bar"><input type="text" id="clients-search" placeholder="会社名・担当者名・電話番号で検索…" oninput="renderClientMaster()"></div>
+    <div id="clients-wrap"><div class="empty">取引先が登録されていません</div></div>
+  </div>
+</div>
+
+<div id="tab-guide" style="display:none;">
+  <div class="section">
+    <div class="section-title">マスタ登録について</div>
+    <p style="font-size:13px;color:#555;margin-bottom:1rem;line-height:1.8;">このアプリでは「商品マスタ」と「取引先マスタ」の2種類のマスタを管理します。</p>
+    <div class="guide-block">
+      <div class="guide-block-title">商品マスタ</div>
+      <div class="section-sub">取得方法① スプレッドシートから取得<span class="rec-badge">推奨</span></div>
+      <div class="guide-step">1. Googleスプレッドシートに「商品マスタ」シートを1つ作成する</div>
+      <div class="guide-step">2. 設定タブに「商品マスタ取得URL」を登録する</div>
+      <div class="guide-step">3. 「商品マスタ」タブ→「スプレッドシートから取得する」をクリック</div>
+      <div class="guide-step" style="color:#e65100;">※ カテゴリーごとにシートを分けず、1シートにまとめてください。</div>
+      <div class="section-sub">取得方法② CSVファイルでインポート</div>
+      <div class="guide-step">1. 「テンプレートDL」で雛形CSVをダウンロードする</div>
+      <div class="guide-step">2. ExcelまたはGoogleスプレッドシートで編集し、CSV形式で保存する</div>
+      <div class="guide-step">3. 「商品マスタ」タブ→「CSVファイルを選択」で取り込む</div>
+      <div class="warn-box">方法②は端末ごとにデータが独立しており、複数端末での共有はできません。ExcelでCSVを開く際に警告が表示される場合がありますが、そのまま編集・CSV形式で保存して問題ありません。</div>
+      <div class="section-sub">CSVフォーマット</div>
+      <div style="font-family:monospace;font-size:13px;color:#1565c0;margin:6px 0 8px;padding:8px 12px;background:#f0f7ff;border-radius:6px;">カテゴリー, 型番, 素材, 単価（税抜）, 台帳備考</div>
+      <div style="font-size:12px;color:#555;line-height:1.8;">・同じ型番で素材が異なる場合は複数行に分けて登録してください（素材ごとに価格を設定できます）<br>・台帳備考は任意です。注文入力時に型番を選択すると自動表示されます</div>
+      <div class="section-sub">更新方法</div>
+      <table class="guide-table"><thead><tr><th>操作</th><th>内容</th><th>向いているケース</th></tr></thead><tbody>
+        <tr><td>スプレッドシートから取得する</td><td>未登録の商品のみ追加（重複除外）</td><td>新商品の追加のみ</td></tr>
+        <tr><td>全削除して再取得</td><td>アプリ内データを全消去してから再取得</td><td>価格変更・修正がある場合</td></tr>
+      </tbody></table>
+      <div class="note-box" style="margin-top:8px;">アプリ内での編集・削除はアプリ内マスタのみに反映されます。スプレッドシートへの反映は「マスタDL」でCSVとして書き出し、手動で反映してください。</div>
+    </div>
+    <div class="guide-block">
+      <div class="guide-block-title">取引先マスタ</div>
+      <div class="section-sub">取得方法① スプレッドシートから取得<span class="rec-badge">推奨</span></div>
+      <div class="guide-step">1. Googleスプレッドシートに「取引先マスタ」シートを作成する</div>
+      <div class="guide-step">2. 設定タブに「取引先マスタ取得URL」を登録する</div>
+      <div class="guide-step">3. 「取引先マスタ」タブ→「スプレッドシートから取得する」をクリック</div>
+      <div class="section-sub">取得方法② 注文入力時に直接登録</div>
+      <div class="guide-step">1. 注文入力画面でお取引先様情報を入力する</div>
+      <div class="guide-step">2. 「新規登録」ボタンを押すと、アプリ内マスタとスプレッドシートの両方に追加される</div>
+      <div class="guide-step">3. 既存取引先の情報を変更した場合は「マスタを更新」ボタンで両方に反映される</div>
+      <div class="success-box">設定タブで「取引先マスタ反映URL（Apps Script）」を登録すると、新規登録・更新時にスプレッドシートへ自動反映されます。未設定の場合は確認ダイアログが表示され、アプリ内のみへの保存を選択できます。</div>
+      <div class="note-box" style="margin-top:8px;">個人のお客様など登録が不要な場合は「新規登録」ボタンを押さずにそのまま注文を保存・送信できます。</div>
+    </div>
+    <div class="guide-block">
+      <div class="guide-block-title">共通事項・注意点</div>
+      <table class="guide-table"><thead><tr><th>項目</th><th>商品マスタ</th><th>取引先マスタ</th></tr></thead><tbody>
+        <tr><td>複数端末共有</td><td>スプレッドシート取得で対応</td><td>スプレッドシート取得で対応</td></tr>
+        <tr><td>スプレッドシートへの自動反映</td><td>なし（マスタDL→手動反映）</td><td>あり（新規登録・更新時）</td></tr>
+        <tr><td>アプリ内での個別削除</td><td>各カードの右上「×」ボタン</td><td>一覧の右端「削除」ボタン</td></tr>
+        <tr><td>削除時の注意</td><td colspan="2">アプリ内のみ削除。スプレッドシート上のデータは別途手動で削除してください。</td></tr>
+        <tr><td>全削除の対象</td><td colspan="2">アプリ内のみ（スプレッドシートは変更なし）</td></tr>
+        <tr><td>退職者への対応</td><td colspan="2">受注用・商品マスタ用・取引先マスタ用、すべてのスプレッドシートの共有設定から削除してください。</td></tr>
+      </tbody></table>
+
+    </div>
+  </div>
+</div>
+
+<div id="tab-settings" style="display:none;">
+  <div class="section">
+    <div class="section-title">アプリ設定</div>
+    <div class="setting-grid">
+      <div class="setting-row">
+        <div style="grid-column:1/-1;">
+          <div class="setting-2col">
+            <div>
+              <div class="setting-label">展示会名<div class="setting-sub">変更まで保持されます</div></div>
+              <div class="setting-val"><input type="text" id="s-event" placeholder="例：JJF2025"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('event')">保存</button></div></div>
+            </div>
+            <div>
+              <div class="setting-label">デフォルト納品納期<div class="setting-sub">注文入力時の初期値（期間指定）</div></div>
+              <div class="setting-val"><div class="mp-picker"><select id="s-del-month"></select><select id="s-del-timing"><option>上旬</option><option>中旬</option><option>下旬</option></select></div><div class="row-actions"><button class="btn btn-sm" onclick="saveS('deldft')">保存</button></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div style="grid-column:1/-1;">
+          <div class="setting-2col">
+            <div>
+              <div class="setting-label">デフォルト掛け率</div>
+              <div class="setting-val"><select id="s-rate" style="max-width:120px;"><option value="0.40">40%</option><option value="0.41">41%</option><option value="0.42">42%</option><option value="0.43">43%</option><option value="0.44">44%</option><option value="0.45" selected>45%</option><option value="0.46">46%</option><option value="0.47">47%</option><option value="0.48">48%</option><option value="0.49">49%</option><option value="0.50">50%</option></select><div class="row-actions"><button class="btn btn-sm" onclick="saveS('rate')">保存</button></div></div>
+            </div>
+            <div>
+              <div class="setting-label">消費税率（%）<div class="setting-sub">請求金額の計算に使用</div></div>
+              <div class="setting-val"><input type="number" id="s-tax" value="10" min="0" max="100" step="1" style="max-width:100px;"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('tax')">保存</button></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">受注データ送信URL<div class="setting-sub">Apps Script（受注用）</div><div class="gs-status"><span class="gs-dot" id="gs-dot"></span><span id="gs-txt">未設定</span></div></div>
+        <div class="setting-val"><input type="url" id="s-gsurl" placeholder="https://script.google.com/macros/s/…/exec"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('gsurl')">保存</button><button class="btn btn-sm" onclick="testGS('gsurl')">接続テスト</button></div><div class="info-box">「受注を保存/送信」時に自動送信します。未設定の場合は確認ダイアログが表示されます。</div></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">商品マスタ取得URL<div class="setting-sub">商品マスタ用スプレッドシートのCSVリンク</div></div>
+        <div class="setting-val"><input type="url" id="s-masterurl" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv&gid=…"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('masterurl')">保存</button></div><div class="warn-box">アクセスを許可したGoogleアカウントのみが閲覧できるよう共有設定を行い、CSVエクスポートURLを貼り付けてください。</div></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">取引先マスタ取得URL<div class="setting-sub">取引先マスタ用スプレッドシートのCSVリンク</div></div>
+        <div class="setting-val"><input type="url" id="s-clienturl" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv&gid=…"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('clienturl')">保存</button></div><div class="warn-box">アクセスを許可したGoogleアカウントのみが閲覧できるよう共有設定を行い、CSVエクスポートURLを貼り付けてください。</div></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">送信トークン<div class="setting-sub">スプレッドシート送信時の認証キー</div></div>
+        <div class="setting-val">
+          <input type="password" id="s-token" placeholder="パスワードを入力">
+          <div class="row-actions"><button class="btn btn-sm" onclick="saveS('token')">保存</button></div>
+          <div class="info-box">受注データ送信時にGAS側で照合されます。Apps Scriptに設定したパスワードと同じ値を入力してください。</div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">取引先マスタ反映URL<div class="setting-sub">Apps Script（取引先マスタ用）</div><div class="gs-status"><span class="gs-dot" id="gs-client-dot"></span><span id="gs-client-txt">未設定</span></div></div>
+        <div class="setting-val"><input type="url" id="s-clientgsurl" placeholder="https://script.google.com/macros/s/…/exec"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('clientgsurl')">保存</button><button class="btn btn-sm" onclick="testGS('clientgsurl')">接続テスト</button></div><div class="info-box">取引先の新規登録・更新時にスプレッドシートへ自動反映します。未設定の場合は確認ダイアログが表示されます。</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="common-modal">
+  <div class="modal">
+    <div class="modal-title" id="cm-title"></div>
+    <div class="modal-body" id="cm-body"></div>
+    <div class="modal-actions" id="cm-actions"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <div class="modal-title" id="del-modal-title">全削除の確認</div>
+    <div class="modal-body" id="del-modal-body"></div>
+    <input type="text" id="del-confirm-input" placeholder="「削除」と入力してください" oninput="checkDeleteInput()">
+    <div class="modal-actions"><button class="btn btn-sm" onclick="closeDeleteModal()">キャンセル</button><button class="btn btn-sm btn-danger-outline" id="del-confirm-btn" disabled onclick="executeDelete()">削除する</button></div>
+  </div>
+</div>
+
+<script>
+let orders=[],products=[],clients=[];
+let settings={eventName:'',taxRate:10,defaultRate:0.45,gsUrl:'',masterUrl:'',clientUrl:'',clientGsUrl:'',defaultDelMonth:'',defaultDelTiming:'上旬',token:''};
+let rowId=0,shipMode='same',delMode='period',masterSrc='sheet',clientSrc='sheet';
+let currentClientId=null,editingOrderId=null,currentOrderNum=null,deleteTarget=null,currentListFilter='all';
+let orderCounters={};
+
+(function init(){
+  try{
+    const s=localStorage.getItem('oms11_s');if(s)settings={...settings,...JSON.parse(s)};
+    const p=localStorage.getItem('oms11_p');if(p)products=JSON.parse(p);
+    const o=localStorage.getItem('oms11_o');if(o)orders=JSON.parse(o);
+    const c=localStorage.getItem('oms11_c');if(c)clients=JSON.parse(c);
+    const oc=localStorage.getItem('oms11_oc');if(oc)orderCounters=JSON.parse(oc);
+  }catch(e){}
+  buildMonthSelects();applySettings();renderMaster();
+  document.getElementById('count-badge').textContent='('+orders.length+')';
+  document.getElementById('order-date').value=new Date().toISOString().slice(0,10);
+  updateDraftBar();addRow();
+})();
+
+function persist(){
+  localStorage.setItem('oms11_s',JSON.stringify(settings));
+  localStorage.setItem('oms11_p',JSON.stringify(products));
+  localStorage.setItem('oms11_o',JSON.stringify(orders));
+  localStorage.setItem('oms11_c',JSON.stringify(clients));
+  localStorage.setItem('oms11_oc',JSON.stringify(orderCounters));
+}
+
+function generateOrderNum(){
+  const en=settings.eventName||'ORDER';
+  const safe=en.replace(/[^a-zA-Z0-9\u3040-\u9FFF]/g,'');
+  const d=new Date();
+  const ds=(d.getMonth()+1).toString().padStart(2,'0')+d.getDate().toString().padStart(2,'0');
+  const key=safe+'-'+ds;
+  if(!orderCounters[key])orderCounters[key]=0;
+  orderCounters[key]++;
+  return safe+'-'+ds+'-'+orderCounters[key].toString().padStart(3,'0');
+}
+
+function buildMonthSelects(){
+  const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  ['del-month','s-del-month'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    sel.innerHTML='';months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
+    sel.selectedIndex=(new Date().getMonth()+1)%12;
+  });
+}
+
+function applySettings(){
+  document.getElementById('event-display').textContent=settings.eventName||'（未設定）';
+  document.getElementById('event-ro').value=settings.eventName||'';
+  document.getElementById('s-event').value=settings.eventName||'';
+  document.getElementById('s-tax').value=settings.taxRate;
+  document.getElementById('m-tr').textContent=settings.taxRate;
+  document.getElementById('s-rate').value=settings.defaultRate;
+  document.getElementById('s-gsurl').value=settings.gsUrl||'';
+  document.getElementById('s-masterurl').value=settings.masterUrl||'';
+  document.getElementById('s-clienturl').value=settings.clientUrl||'';
+  document.getElementById('s-clientgsurl').value=settings.clientGsUrl||'';
+  document.getElementById('s-token').value=settings.token||'';
+  if(settings.defaultDelMonth){
+    const sm=document.getElementById('s-del-month');if(sm)sm.value=settings.defaultDelMonth;
+    const st=document.getElementById('s-del-timing');if(st)st.value=settings.defaultDelTiming||'上旬';
+  }
+  updateDots();applyDefaultDelivery();
+}
+
+function updateDots(){
+  updateDot('gs-dot','gs-txt',settings.gsUrl);
+  updateDot('gs-client-dot','gs-client-txt',settings.clientGsUrl);
+}
+function updateDot(di,ti,val){
+  const dot=document.getElementById(di),txt=document.getElementById(ti);
+  if(!dot)return;
+  if(val){dot.style.background='#4caf50';txt.textContent='URL設定済み';}
+  else{dot.style.background='#ccc';txt.textContent='未設定';}
+}
+
+function applyDefaultDelivery(){
+  setDel('period');
+  if(settings.defaultDelMonth){
+    const dm=document.getElementById('del-month');if(dm)dm.value=settings.defaultDelMonth;
+    const dt=document.getElementById('del-timing');if(dt)dt.value=settings.defaultDelTiming||'上旬';
+  }
+}
+
+function updateDraftBar(){
+  const drafts=orders.filter(o=>o.isDraft);
+  const bar=document.getElementById('draft-bar');
+  if(drafts.length>0){bar.style.display='flex';document.getElementById('draft-bar-text').textContent='一時保存中のデータが '+drafts.length+' 件あります';}
+  else{bar.style.display='none';}
+  document.getElementById('count-badge').textContent='('+orders.length+')';
+}
+
+function updateOrderNumBar(num){
+  const bar=document.getElementById('order-num-bar');
+  if(num){bar.style.display='flex';document.getElementById('order-num-display').textContent=num;}
+  else{bar.style.display='none';}
+}
+
+function saveS(key){
+  if(key==='event')settings.eventName=document.getElementById('s-event').value.trim();
+  else if(key==='tax'){settings.taxRate=parseFloat(document.getElementById('s-tax').value)||10;document.getElementById('m-tr').textContent=settings.taxRate;calcTotals();}
+  else if(key==='rate')settings.defaultRate=parseFloat(document.getElementById('s-rate').value);
+  else if(key==='gsurl')settings.gsUrl=document.getElementById('s-gsurl').value.trim();
+  else if(key==='masterurl')settings.masterUrl=document.getElementById('s-masterurl').value.trim();
+  else if(key==='clienturl')settings.clientUrl=document.getElementById('s-clienturl').value.trim();
+  else if(key==='clientgsurl')settings.clientGsUrl=document.getElementById('s-clientgsurl').value.trim();
+  else if(key==='token')settings.token=document.getElementById('s-token').value.trim();
+  else if(key==='deldft'){settings.defaultDelMonth=document.getElementById('s-del-month').value;settings.defaultDelTiming=document.getElementById('s-del-timing').value;applyDefaultDelivery();}
+  persist();applySettings();alert('保存しました');
+}
+
+async function testGS(key){
+  const um={gsurl:settings.gsUrl,clientgsurl:settings.clientGsUrl};
+  const tm={gsurl:'gs-txt',clientgsurl:'gs-client-txt'};
+  const dm={gsurl:'gs-dot',clientgsurl:'gs-client-dot'};
+  const url=um[key];if(!url){alert('URLを入力してください');return;}
+  document.getElementById(tm[key]).textContent='接続中…';
+  try{await fetch(url,{method:'POST',body:JSON.stringify({_test:true}),headers:{'Content-Type':'application/json'}});document.getElementById(dm[key]).style.background='#4caf50';document.getElementById(tm[key]).textContent='接続OK';}
+  catch(e){document.getElementById(dm[key]).style.background='#e53935';document.getElementById(tm[key]).textContent='接続エラー';}
+}
+
+function showModal(title,body,buttons){
+  document.getElementById('cm-title').textContent=title;
+  document.getElementById('cm-body').textContent=body;
+  const el=document.getElementById('cm-actions');el.innerHTML='';
+  buttons.forEach(b=>{const btn=document.createElement('button');btn.className='btn btn-sm '+(b.cls||'');btn.textContent=b.label;btn.onclick=()=>{closeCommonModal();b.action();};el.appendChild(btn);});
+  document.getElementById('common-modal').classList.add('show');
+}
+function closeCommonModal(){document.getElementById('common-modal').classList.remove('show');}
+
+function showTab(t){
+  ['form','list','master','clients','guide','settings'].forEach(id=>document.getElementById('tab-'+id).style.display=id===t?'':'none');
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['form','list','master','clients','guide','settings'][i]===t));
+  if(t==='list')renderList();if(t==='master')renderMaster();if(t==='clients')renderClientMaster();
+}
+
+function setShip(m){shipMode=m;document.getElementById('ship-same').classList.toggle('on',m==='same');document.getElementById('ship-diff').classList.toggle('on',m==='diff');document.getElementById('ship-box').style.display=m==='diff'?'':'none';}
+
+function setDel(m){
+  delMode=m;
+  document.getElementById('del-p').classList.toggle('on',m==='period');
+  document.getElementById('del-d').classList.toggle('on',m==='date');
+  document.getElementById('del-period-box').style.display=m==='period'?'':'none';
+  document.getElementById('del-date-box').style.display=m==='date'?'':'none';
+}
+
+function setMasterSrc(s){masterSrc=s;document.getElementById('src-sheet').classList.toggle('on',s==='sheet');document.getElementById('src-local').classList.toggle('on',s==='local');document.getElementById('master-sheet-area').style.display=s==='sheet'?'':'none';document.getElementById('master-local-area').style.display=s==='local'?'':'none';}
+function setClientSrc(s){clientSrc=s;document.getElementById('csrc-sheet').classList.toggle('on',s==='sheet');document.getElementById('csrc-local').classList.toggle('on',s==='local');document.getElementById('client-sheet-area').style.display=s==='sheet'?'':'none';document.getElementById('client-local-area').style.display=s==='local'?'':'none';}
+
+function getClientFields(){return{company:document.getElementById('company').value.trim(),contactName:document.getElementById('contact-name').value.trim(),tel:document.getElementById('tel').value.trim(),email:document.getElementById('email').value.trim(),address:document.getElementById('address').value.trim(),shipAddress:document.getElementById('ship-addr').value.trim(),shippingMode:shipMode};}
+function fillClientFields(c){document.getElementById('company').value=c.company||'';document.getElementById('contact-name').value=c.contactName||'';document.getElementById('tel').value=c.tel||'';document.getElementById('email').value=c.email||'';document.getElementById('address').value=c.address||'';document.getElementById('ship-addr').value=c.shipAddress||'';setShip(c.shippingMode||'same');currentClientId=c.id;updateClientButtons();}
+function onClientFieldChange(){const company=document.getElementById('company').value.trim();if(!company){currentClientId=null;updateClientButtons();return;}const match=clients.find(c=>c.company===company);currentClientId=match?match.id:null;updateClientButtons();}
+function updateClientButtons(){
+  const company=document.getElementById('company').value.trim();
+  const actions=document.getElementById('client-actions');const note=document.getElementById('client-note');
+  if(!company){actions.style.display='none';return;}
+  actions.style.display='flex';
+  const exists=clients.find(c=>c.id===currentClientId);
+  document.getElementById('client-new-btn').style.display=exists?'none':'inline-block';
+  document.getElementById('client-update-btn').style.display=exists?'inline-block':'none';
+  note.textContent=exists?(settings.clientGsUrl?'※ アプリ内マスタとスプレッドシートの両方を更新します。':'※ アプリ内マスタのみ更新されます。'):'';
+}
+function searchClients(){const q=document.getElementById('client-search').value.trim().toLowerCase();const res=document.getElementById('client-results');if(!q){res.style.display='none';return;}const matched=clients.filter(c=>c.company.toLowerCase().includes(q)||(c.contactName&&c.contactName.toLowerCase().includes(q)));if(!matched.length){res.innerHTML='<div class="client-item"><div class="client-sub">該当する取引先がありません</div></div>';res.style.display='block';return;}res.innerHTML=matched.map(c=>`<div class="client-item" onclick="loadClient('${c.id}')"><div class="client-name">${c.company}</div><div class="client-sub">${[c.contactName,c.tel,c.email].filter(Boolean).join(' / ')}</div></div>`).join('');res.style.display='block';}
+function loadClient(id){const c=clients.find(x=>x.id===id);if(!c)return;fillClientFields(c);document.getElementById('client-results').style.display='none';document.getElementById('client-search').value='';}
+function clearClientSearch(){document.getElementById('client-search').value='';document.getElementById('client-results').style.display='none';}
+
+async function doRegisterNewClient(f){
+  const nc={...f,id:'c_'+Date.now()};clients.push(nc);currentClientId=nc.id;persist();updateClientButtons();
+  if(settings.clientGsUrl){
+    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'add',data:nc}),headers:{'Content-Type':'application/json'}});alert('「'+f.company+'」を登録しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
+    catch(e){alert('「'+f.company+'」を登録しました。\nスプレッドシートへの反映に失敗しました。別途ご確認ください。');}
+  }else{alert('「'+f.company+'」をアプリ内マスタに登録しました。');}
+}
+function registerNewClient(){
+  const f=getClientFields();if(!f.company){alert('会社名を入力してください');return;}
+  if(clients.find(c=>c.company===f.company)){alert('同じ会社名がすでに登録されています。');return;}
+  if(!settings.clientGsUrl){showModal('URLが未設定です','取引先マスタ反映URLが設定されていません。\nアプリ内のみに登録されますが、続行しますか？',[{label:'キャンセル',cls:'',action:()=>{}},{label:'アプリ内のみ登録',cls:'btn-warn',action:()=>doRegisterNewClient(f)}]);}
+  else{doRegisterNewClient(f);}
+}
+
+async function doUpdateClient(idx,f){
+  clients[idx]={...clients[idx],...f};persist();
+  if(settings.clientGsUrl){
+    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'update',data:clients[idx]}),headers:{'Content-Type':'application/json'}});alert('「'+f.company+'」を更新しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
+    catch(e){alert('「'+f.company+'」をアプリ内で更新しました。\nスプレッドシートへの反映に失敗しました。別途ご確認ください。');}
+  }else{alert('「'+f.company+'」をアプリ内マスタで更新しました。');}
+}
+function updateClient(){
+  if(!currentClientId)return;const idx=clients.findIndex(c=>c.id===currentClientId);if(idx<0)return;
+  const f=getClientFields();
+  if(!settings.clientGsUrl){showModal('URLが未設定です','取引先マスタ反映URLが設定されていません。\nアプリ内のみ更新されますが、続行しますか？',[{label:'キャンセル',cls:'',action:()=>{}},{label:'アプリ内のみ更新',cls:'btn-warn',action:()=>doUpdateClient(idx,f)}]);}
+  else{doUpdateClient(idx,f);}
+}
+
+function buildAC(id){
+  const inp=document.getElementById('ac-inp-'+id);if(!inp)return;
+  inp.oninput=()=>{
+    const q=inp.value.trim().toLowerCase();
+    let list=document.getElementById('ac-list-'+id);
+    if(!list){list=document.createElement('div');list.className='ac-list';list.id='ac-list-'+id;document.getElementById('ac-wrap-'+id).appendChild(list);}
+    if(!q){list.style.display='none';return;}
+    const mm={};
+    products.forEach(p=>{
+      if(p.model.toLowerCase().includes(q)||(p.category&&p.category.toLowerCase().includes(q))){
+        if(!mm[p.model])mm[p.model]={category:p.category,materials:[],imgData:''};
+        if(p.material&&!mm[p.model].materials.includes(p.material))mm[p.model].materials.push(p.material);
+        if(!mm[p.model].imgData&&p.imgData)mm[p.model].imgData=p.imgData;
+      }
+    });
+    const keys=Object.keys(mm).slice(0,12);
+    if(!keys.length){list.style.display='none';return;}
+    list.innerHTML=keys.map(model=>`<div class="ac-item" onmousedown="selectModel(${id},'${model.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"><div class="ac-item-model">${model}${mm[model].category?' <span style="font-size:10px;color:#888;">'+mm[model].category+'</span>':''}</div><div class="ac-item-sub">${mm[model].materials.join(' / ')||''}</div></div>`).join('');
+    list.innerHTML+=`<div class="ac-item" onmousedown="closeAC(${id})"><div class="ac-item-model" style="color:#aaa;">「${inp.value}」を手入力で確定</div></div>`;
+    list.style.display='block';
+  };
+  inp.onblur=()=>setTimeout(()=>{const l=document.getElementById('ac-list-'+id);if(l)l.style.display='none';},150);
+}
+
+function selectModel(id,model){
+  const inp=document.getElementById('ac-inp-'+id);if(inp)inp.value=model;closeAC(id);
+  const prods=products.filter(p=>p.model===model);
+  const mats=[...new Set(prods.map(p=>p.material).filter(Boolean))];
+  const ms=document.getElementById('mat-'+id);
+  if(ms){ms.innerHTML=mats.length?'':'<option value="">−</option>';mats.forEach(m=>{const o=new Option(m,m);ms.appendChild(o);});if(mats.length===1)ms.value=mats[0];}
+  const ci=document.getElementById('cat-'+id);if(ci)ci.value=prods[0]?.category||'';
+  const mi=document.getElementById('memo-'+id);if(mi)mi.value=prods[0]?.memo||'';
+  const wi=prods.find(p=>p.imgData);if(wi)setThumb(id,wi.imgData);
+  fillPriceFromMat(id,model,ms?ms.value:'');calcTotals();
+}
+function fillPriceFromMat(id,model,mat){const p=products.find(p=>p.model===model&&(p.material===mat||!mat));if(p&&p.price){const pi=document.getElementById('price-'+id);if(pi)pi.value=p.price;}calcTotals();}
+function closeAC(id){const l=document.getElementById('ac-list-'+id);if(l)l.style.display='none';}
+
+function addRow(data){
+  const id=++rowId;
+  const div=document.createElement('div');div.className='prod-row';div.id='pr-'+id;
+  const thumb=document.createElement('div');thumb.className='prod-thumb';thumb.id='th-'+id;thumb.textContent='画像';thumb.onclick=()=>uploadThumb(id);div.appendChild(thumb);
+  const mid=document.createElement('div');mid.className='prod-mid';
+  const r1=document.createElement('div');r1.className='prod-row12';
+  const catInp=document.createElement('input');catInp.type='text';catInp.id='cat-'+id;catInp.style.fontSize='12px';catInp.placeholder='カテゴリー';
+  const aw=document.createElement('div');aw.className='ac-wrap';aw.id='ac-wrap-'+id;
+  const ai=document.createElement('input');ai.type='text';ai.className='ac-input';ai.id='ac-inp-'+id;ai.placeholder='型番を検索…';
+  aw.appendChild(ai);r1.appendChild(catInp);r1.appendChild(aw);mid.appendChild(r1);
+  const r2=document.createElement('div');r2.className='prod-row12';
+  const ms=document.createElement('select');ms.id='mat-'+id;ms.style.fontSize='12px';ms.innerHTML='<option value="">素材</option>';ms.onchange=()=>fillPriceFromMat(id,document.getElementById('ac-inp-'+id)?.value.trim(),ms.value);
+  const si=document.createElement('input');si.type='text';si.id='sz-'+id;si.style.fontSize='12px';si.placeholder='サイズ';si.oninput=calcTotals;
+  r2.appendChild(ms);r2.appendChild(si);mid.appendChild(r2);
+  const mi=document.createElement('input');mi.type='text';mi.id='memo-'+id;mi.style.fontSize='12px';mi.placeholder='台帳記載の備考';mi.oninput=calcTotals;mid.appendChild(mi);
+  const sti=document.createElement('input');sti.type='text';sti.id='st-'+id;sti.style.fontSize='12px';sti.placeholder='任意入力欄（石変更・空枠・支給など）';sti.oninput=calcTotals;mid.appendChild(sti);
+  div.appendChild(mid);
+  const qi=document.createElement('input');qi.type='number';qi.id='qty-'+id;qi.value=data?.qty||1;qi.min=1;qi.oninput=calcTotals;qi.style.textAlign='center';div.appendChild(qi);
+  const pi=document.createElement('input');pi.type='number';pi.id='price-'+id;pi.placeholder='単価';pi.oninput=calcTotals;div.appendChild(pi);
+  const ri=document.createElement('select');ri.id='rr-'+id;ri.style.fontSize='12px';
+  [40,41,42,43,44,45,46,47,48,49,50].forEach(v=>{const o=document.createElement('option');o.value=(v/100).toFixed(2);o.textContent=v+'%';if(v===Math.round(settings.defaultRate*100))o.selected=true;ri.appendChild(o);});
+  ri.onchange=calcTotals;div.appendChild(ri);
+  const sd=document.createElement('div');sd.id='sb-'+id;sd.style='font-size:12px;text-align:right;padding-top:9px;font-weight:600;';sd.textContent='¥0';div.appendChild(sd);
+  const rb=document.createElement('button');rb.className='rm-btn';rb.textContent='×';rb.onclick=()=>{div.remove();calcTotals();};div.appendChild(rb);
+  document.getElementById('prod-rows').appendChild(div);buildAC(id);
+  if(data){
+    const a=document.getElementById('ac-inp-'+id);if(a)a.value=data.model||'';
+    const c=document.getElementById('cat-'+id);if(c)c.value=data.category||'';
+    const m=document.getElementById('mat-'+id);if(m&&data.mat){const o=new Option(data.mat,data.mat,true,true);m.appendChild(o);m.value=data.mat;}
+    const s=document.getElementById('sz-'+id);if(s)s.value=data.size||'';
+    const mm=document.getElementById('memo-'+id);if(mm)mm.value=data.memo||'';
+    const st=document.getElementById('st-'+id);if(st)st.value=data.stone||'';
+    const p=document.getElementById('price-'+id);if(p)p.value=data.price||'';
+    const r=document.getElementById('rr-'+id);if(r&&data.rr)r.value=parseFloat(data.rr).toFixed(2);
+    if(data.imgData&&data.imgData.startsWith('data:'))setThumb(id,data.imgData);
+  }
+  calcTotals();
+}
+
+function setThumb(id,imgData){const t=document.getElementById('th-'+id);if(!t)return;t.innerHTML='';const img=document.createElement('img');img.src=imgData;img.style='width:100%;height:100%;object-fit:cover;';t.appendChild(img);}
+function uploadThumb(id){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>setThumb(id,ev.target.result);r.readAsDataURL(f);};inp.click();}
+
+function calcTotals(){
+  let sub=0,ar=0;
+  document.querySelectorAll('.prod-row').forEach(row=>{
+    const id=row.id.replace('pr-','');
+    const qty=parseFloat(document.getElementById('qty-'+id)?.value)||0;
+    const price=parseFloat(document.getElementById('price-'+id)?.value)||0;
+    const rr=parseFloat(document.getElementById('rr-'+id)?.value)||settings.defaultRate;
+    const s=qty*price*rr;
+    const sd=document.getElementById('sb-'+id);if(sd)sd.textContent='¥'+Math.round(s).toLocaleString();
+    sub+=qty*price;ar+=s;
+  });
+  const tax=ar*(settings.taxRate/100),total=ar+tax;
+  const fmt=v=>'¥'+Math.round(v).toLocaleString();
+  document.getElementById('m-sub').textContent=fmt(sub);
+  document.getElementById('m-after').textContent=fmt(ar);
+  document.getElementById('m-tax').textContent=fmt(tax);
+  document.getElementById('m-total').textContent=fmt(total);
+}
+
+function getRows(){
+  const rows=[];
+  document.querySelectorAll('.prod-row').forEach(row=>{
+    const id=row.id.replace('pr-','');
+    const model=document.getElementById('ac-inp-'+id)?.value.trim()||'';
+    const mat=document.getElementById('mat-'+id)?.value||'';
+    const size=document.getElementById('sz-'+id)?.value.trim()||'';
+    const memo=document.getElementById('memo-'+id)?.value.trim()||'';
+    const stone=document.getElementById('st-'+id)?.value.trim()||'';
+    const category=document.getElementById('cat-'+id)?.value.trim()||'';
+    const qty=parseFloat(document.getElementById('qty-'+id)?.value)||0;
+    const price=parseFloat(document.getElementById('price-'+id)?.value)||0;
+    const rr=parseFloat(document.getElementById('rr-'+id)?.value)||settings.defaultRate;
+    const imgSrc=document.getElementById('th-'+id)?.querySelector('img')?.src||'';
+    if(!model||!price)return;
+    rows.push({model,mat,size,memo,stone,category,qty,price,rr,sub:Math.round(qty*price*rr),imgData:imgSrc.startsWith('data:')?imgSrc:''});
+  });
+  return rows;
+}
+
+function getDelivery(){
+  if(delMode==='date')return document.getElementById('del-date').value;
+  return(document.getElementById('del-month').value||'')+(document.getElementById('del-timing').value||'');
+}
+
+function buildOrderObject(isDraft,num){
+  const rows=getRows();
+  let sub=0,ar=0;rows.forEach(r=>{sub+=r.qty*r.price;ar+=r.sub;});
+  const tax=Math.round(ar*(settings.taxRate/100)),total=Math.round(ar)+tax;
+  return{id:editingOrderId||Date.now(),orderNum:num||currentOrderNum||'',orderDate:document.getElementById('order-date').value,eventName:settings.eventName,company:document.getElementById('company').value.trim(),contactName:document.getElementById('contact-name').value,tel:document.getElementById('tel').value,email:document.getElementById('email').value,address:document.getElementById('address').value,shippingMode:shipMode,shipAddress:document.getElementById('ship-addr').value,staff:document.getElementById('staff').value.trim(),payment:document.getElementById('payment').value,payStatus:document.getElementById('pay-status').value,delivery:getDelivery(),rows,subtotal:Math.round(sub),afterRate:Math.round(ar),tax,total,notes:document.getElementById('notes').value,taxRate:settings.taxRate,isDraft:!!isDraft};
+}
+
+function saveDraft(){
+  const company=document.getElementById('company').value.trim();const staff=document.getElementById('staff').value.trim();
+  if(!company||!staff){alert('会社名と担当者名は入力してください');return;}
+  const num=currentOrderNum||(editingOrderId?orders.find(o=>o.id===editingOrderId)?.orderNum:null)||generateOrderNum();
+  currentOrderNum=num;
+  const order=buildOrderObject(true,num);
+  const idx=editingOrderId?orders.findIndex(o=>o.id===editingOrderId):-1;
+  if(idx>=0)orders[idx]=order;else orders.push(order);
+  persist();updateDraftBar();updateOrderNumBar(num);
+  alert('受注番号：'+num+'\n「'+company+'」を一時保存しました。');
+  editingOrderId=order.id;
+}
+
+async function doSaveOrder(order){
+  const idx=editingOrderId?orders.findIndex(o=>o.id===editingOrderId):-1;
+  if(idx>=0)orders[idx]=order;else orders.push(order);
+  persist();updateDraftBar();
+  const st=document.getElementById('sync-status');
+  if(settings.gsUrl){
+    st.textContent='スプレッドシートに送信中…';
+    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress}),headers:{'Content-Type':'application/json'}});st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
+    catch(e){st.textContent='⚠ 送信に失敗しました。CSVでバックアップしてください。';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。\nスプレッドシートへの送信に失敗しました。別途ご確認ください。');}
+  }else{st.textContent='※ スプレッドシートURL未設定のため端末内のみに保存しました';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。');}
+  editingOrderId=null;currentOrderNum=null;resetForm();
+}
+
+function saveOrder(){
+  const company=document.getElementById('company').value.trim();const staff=document.getElementById('staff').value.trim();const orderDate=document.getElementById('order-date').value;
+  if(!company||!staff||!orderDate){alert('注文日・会社名・担当者名は必須です');return;}
+  const rows=getRows();if(!rows.length){alert('型番と単価を入力してください');return;}
+  if(!document.getElementById('payment').value){alert('お支払い方法を選択してください');return;}
+  const num=currentOrderNum||(editingOrderId?orders.find(o=>o.id===editingOrderId)?.orderNum:null)||generateOrderNum();
+  const order=buildOrderObject(false,num);
+  if(!settings.gsUrl){showModal('受注データ送信URLが未設定です','スプレッドシートへの送信が行われません。\nアプリ内のみに保存されますが、続行しますか？',[{label:'キャンセル',cls:'',action:()=>{}},{label:'アプリ内のみ保存',cls:'btn-warn',action:()=>doSaveOrder(order)}]);}
+  else{doSaveOrder(order);}
+}
+
+function resetForm(){
+  ['company','contact-name','tel','email','address','ship-addr','notes','staff'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('order-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('payment').value='';document.getElementById('pay-status').value='';
+  currentClientId=null;document.getElementById('client-actions').style.display='none';
+  setShip('same');document.getElementById('prod-rows').innerHTML='';rowId=0;
+  editingOrderId=null;currentOrderNum=null;updateOrderNumBar(null);
+  applyDefaultDelivery();calcTotals();addRow();
+}
+
+function filterOrders(type){
+  currentListFilter=type;
+  document.getElementById('filter-all-btn').className='btn btn-sm'+(type==='all'?' btn-success':'');
+  document.getElementById('filter-draft-btn').className='btn btn-sm'+(type==='draft'?' btn-warn':'');
+  renderList();
+}
+
+function renderList(){
+  const q=(document.getElementById('list-search')?.value||'').trim().toLowerCase();
+  let filtered=orders.filter(o=>{
+    if(currentListFilter==='draft'&&!o.isDraft)return false;
+    if(!q)return true;
+    return(o.orderNum&&o.orderNum.toLowerCase().includes(q))||o.company.toLowerCase().includes(q)||(o.staff&&o.staff.toLowerCase().includes(q))||(o.rows&&o.rows.some(r=>r.model.toLowerCase().includes(q)));
+  });
+  const c=document.getElementById('orders-wrap');
+  if(!filtered.length){c.innerHTML='<div class="empty">該当するデータがありません</div>';return;}
+  c.innerHTML=`<div style="overflow-x:auto;"><table class="orders-table"><thead><tr><th>状態</th><th>受注番号</th><th>注文日</th><th>会社名</th><th>担当者</th><th>請求金額(税込)</th><th>支払方法</th><th>納品納期</th><th>操作</th></tr></thead><tbody>
+  ${filtered.map(o=>`<tr><td>${o.isDraft?'<span class="badge badge-warn">一時保存</span>':'<span class="badge">確定</span>'}</td><td style="font-family:monospace;font-size:11px;">${o.orderNum||'−'}</td><td>${o.orderDate||''}</td><td style="font-weight:600">${o.company}</td><td>${o.staff}</td><td style="font-weight:600">¥${o.total.toLocaleString()}</td><td>${o.payment||'−'}</td><td>${o.delivery||''}</td><td><div style="display:flex;gap:3px;flex-wrap:wrap;"><button class="btn btn-sm" onclick="loadOrderToForm(${o.id},'edit')">編集</button>${!o.isDraft?`<button class="btn btn-sm" onclick="loadOrderToForm(${o.id},'copy')">複写</button>`:''}<button class="btn btn-sm" onclick="resend(${o.id})">再送信</button><button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteOrder(${o.id})">削除</button></div></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+function loadOrderToForm(id,mode){
+  const order=orders.find(o=>o.id===id);if(!order)return;showTab('form');
+  document.getElementById('order-date').value=order.orderDate||'';document.getElementById('staff').value=order.staff||'';document.getElementById('company').value=order.company||'';document.getElementById('contact-name').value=order.contactName||'';document.getElementById('tel').value=order.tel||'';document.getElementById('email').value=order.email||'';document.getElementById('address').value=order.address||'';document.getElementById('ship-addr').value=order.shipAddress||'';setShip(order.shippingMode||'same');document.getElementById('payment').value=order.payment||'';document.getElementById('pay-status').value=order.payStatus||'';document.getElementById('notes').value=order.notes||'';
+  const del=order.delivery||'';const isPeriod=['上旬','中旬','下旬'].some(p=>del.endsWith(p));
+  if(isPeriod){setDel('period');const dm=document.getElementById('del-month');if(dm)dm.value=del.slice(0,-2);const dt=document.getElementById('del-timing');if(dt)dt.value=del.slice(-2);}
+  else{setDel('date');document.getElementById('del-date').value=del;}
+  document.getElementById('prod-rows').innerHTML='';rowId=0;(order.rows||[]).forEach(r=>addRow(r));
+  if(mode==='edit'){editingOrderId=order.id;currentOrderNum=order.orderNum||null;updateOrderNumBar(order.orderNum||null);document.getElementById('sync-status').textContent=(order.isDraft?'一時保存データを読み込みました。':'確定済みデータを編集中です。')+'修正後「受注を保存/送信」で更新してください。';}
+  else{editingOrderId=null;currentOrderNum=null;updateOrderNumBar(null);document.getElementById('sync-status').textContent='受注データを複写しました。内容を確認し保存してください。（新しい受注番号が付与されます）';}
+  onClientFieldChange();
+}
+
+function confirmDeleteOrder(id){
+  const order=orders.find(o=>o.id===id);if(!order)return;
+  showModal('この受注データをアプリ内から削除しますか？','受注番号：'+(order.orderNum||'−')+'\n会社名：'+order.company+'\n\n※ スプレッドシート上のデータは削除されません。\n　 受注番号をもとに、スプレッドシート側でも\n　 別途削除をお願いいたします。',[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:()=>{orders=orders.filter(o=>o.id!==id);persist();updateDraftBar();renderList();}}]);
+}
+
+async function resend(id){
+  const order=orders.find(o=>o.id===id);if(!order)return;
+  if(!settings.gsUrl){alert('スプレッドシートURLが設定されていません');return;}
+  try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,token:settings.token||''}),headers:{'Content-Type':'application/json'}});alert('再送信しました');}
+  catch(e){alert('送信に失敗しました');}
+}
+
+function renderMaster(){
+  const q=(document.getElementById('master-search')?.value||'').trim().toLowerCase();
+  const filtered=q?products.filter(p=>p.model.toLowerCase().includes(q)||(p.category&&p.category.toLowerCase().includes(q))||(p.material&&p.material.toLowerCase().includes(q))):products;
+  document.getElementById('master-count').textContent=products.length;
+  const g=document.getElementById('master-grid');
+  if(!filtered.length){g.innerHTML='<div class="empty">'+(q?'該当する商品がありません':'商品が登録されていません')+'</div>';return;}
+  g.innerHTML=filtered.map(p=>{const ri=products.indexOf(p);return`<div class="master-card"><button class="master-del" onclick="confirmDelProduct(${ri},'${p.model.replace(/'/g,"\\'")}','${(p.material||'').replace(/'/g,"\\'")}')">×</button><div class="master-img">${p.imgData?`<img src="${p.imgData}">`:'画像なし'}</div><div class="master-name">${p.model}</div><div class="master-sub">${p.category||''}</div><div class="master-sub">${p.material||''}</div><div class="master-sub">¥${Number(p.price).toLocaleString()}</div>${p.memo?`<div class="master-sub" style="font-size:10px;color:#aaa;">${p.memo}</div>`:''}<input type="file" accept="image/*" style="font-size:10px;margin-top:4px;" onchange="setProdImg(${ri},this)"></div>`;}).join('');
+}
+
+function setProdImg(i,inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{products[i].imgData=e.target.result;persist();renderMaster();};r.readAsDataURL(f);}
+
+function confirmDelProduct(i,model,material){
+  const label=material?model+'（'+material+'）':model;
+  showModal('この商品をアプリ内から削除しますか？','型番：'+label+'\n\n※ スプレッドシート上のデータは削除されません。\n　 スプレッドシート側でも別途削除をお願いいたします。',[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:()=>{products.splice(i,1);persist();renderMaster();}}]);
+}
+
+async function fetchMasterFromSheet(){
+  if(!settings.masterUrl){alert('設定タブで商品マスタ取得URLを登録してください');return;}
+  const st=document.getElementById('fetch-status');st.textContent='取得中…';
+  try{const res=await fetch(settings.masterUrl);const text=await res.text();const lines=text.split('\n').filter(l=>l.trim());let count=0;lines.forEach((line,i)=>{if(i===0&&(line.includes('型番')||line.includes('カテゴリー')))return;const cols=line.split(',').map(s=>s.replace(/^"|"$/g,'').trim());if(cols.length<2)return;const[category,model,material,price,memo]=cols;if(!model)return;if(!products.find(p=>p.model===model&&p.material===material)){products.push({id:Date.now()+i,model,category:category||'',material:material||'',price:parseFloat(price)||0,memo:memo||'',imgData:''});count++;}});persist();renderMaster();st.textContent=count+'件を取得しました（重複除外済み）';}
+  catch(e){st.textContent='取得に失敗しました。URLと共有設定を確認してください。';}
+}
+
+async function fetchMasterFromSheetFull(){
+  if(!confirm('アプリ内の商品マスタを全削除してスプレッドシートから再取得します。よろしいですか？'))return;
+  if(!settings.masterUrl){alert('設定タブで商品マスタ取得URLを登録してください');return;}
+  const st=document.getElementById('fetch-status');st.textContent='全削除して取得中…';products=[];
+  try{const res=await fetch(settings.masterUrl);const text=await res.text();const lines=text.split('\n').filter(l=>l.trim());let count=0;lines.forEach((line,i)=>{if(i===0&&(line.includes('型番')||line.includes('カテゴリー')))return;const cols=line.split(',').map(s=>s.replace(/^"|"$/g,'').trim());if(cols.length<2)return;const[category,model,material,price,memo]=cols;if(!model)return;products.push({id:Date.now()+i,model,category:category||'',material:material||'',price:parseFloat(price)||0,memo:memo||'',imgData:''});count++;});persist();renderMaster();st.textContent=count+'件を取得しました（全件更新）';}
+  catch(e){st.textContent='取得に失敗しました。URLと共有設定を確認してください。';}
+}
+
+function importCSV(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{const lines=e.target.result.split('\n').filter(l=>l.trim());let count=0;lines.forEach((line,i)=>{if(i===0&&(line.includes('型番')||line.includes('カテゴリー')))return;const cols=line.split(',').map(s=>s.replace(/^"|"$/g,'').trim());if(cols.length<2)return;const[category,model,material,price,memo]=cols;if(!model)return;products.push({id:Date.now()+i,model,category:category||'',material:material||'',price:parseFloat(price)||0,memo:memo||'',imgData:''});count++;});persist();renderMaster();alert(count+'件の商品を登録しました');inp.value='';};
+  r.readAsText(f,'UTF-8');
+}
+
+function dlTemplate(){
+  const bom='\uFEFF';const csv=bom+'カテゴリー,型番,素材,単価（税抜）,台帳備考\nリング,AAA,K18,20000,\nリング,AAA,K10,10000,\nピアス,BBB,K18,15000,フープタイプ\n';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='商品マスタ_テンプレート.csv';a.click();
+}
+
+function exportMasterCSV(){
+  if(!products.length){alert('商品マスタにデータがありません');return;}
+  const bom='\uFEFF';const hdr='カテゴリー,型番,素材,単価（税抜）,台帳備考';
+  const rows=products.map(p=>[p.category||'',p.model,p.material||'',p.price,p.memo||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv=bom+[hdr,...rows].join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='商品マスタ_'+new Date().toLocaleDateString('ja-JP').replace(/\//g,'')+'.csv';a.click();
+}
+
+function renderClientMaster(){
+  const q=(document.getElementById('clients-search')?.value||'').trim().toLowerCase();
+  const filtered=q?clients.filter(c=>c.company.toLowerCase().includes(q)||(c.contactName&&c.contactName.toLowerCase().includes(q))||(c.tel&&c.tel.includes(q))):clients;
+  document.getElementById('clients-count').textContent=clients.length;
+  const w=document.getElementById('clients-wrap');
+  if(!filtered.length){w.innerHTML='<div class="empty">'+(q?'該当する取引先がありません':'取引先が登録されていません')+'</div>';return;}
+  w.innerHTML=`<div style="overflow-x:auto;"><table class="client-master-table"><thead><tr><th>会社名</th><th>担当者名</th><th>電話番号</th><th>メール</th><th>住所</th><th></th></tr></thead><tbody>${filtered.map(c=>`<tr><td style="font-weight:600">${c.company}</td><td>${c.contactName||'−'}</td><td>${c.tel||'−'}</td><td style="font-size:11px;">${c.email||'−'}</td><td style="font-size:11px;">${c.address||'−'}</td><td><button class="btn btn-sm btn-danger-outline" onclick="confirmDelClient('${c.id}','${c.company.replace(/'/g,"\\'")}')">削除</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function confirmDelClient(id,company){
+  showModal('この取引先をアプリ内から削除しますか？','会社名：'+company+'\n\n※ スプレッドシート上のデータは削除されません。\n　 スプレッドシート側でも別途削除をお願いいたします。',[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:()=>{clients=clients.filter(c=>c.id!==id);persist();renderClientMaster();document.getElementById('clients-count').textContent=clients.length;}}]);
+}
+
+async function fetchClientsFromSheet(){
+  if(!settings.clientUrl){alert('設定タブで取引先マスタ取得URLを登録してください');return;}
+  const st=document.getElementById('client-fetch-status');st.textContent='取得中…';
+  try{const res=await fetch(settings.clientUrl);const text=await res.text();const lines=text.split('\n').filter(l=>l.trim());let count=0;lines.forEach((line,i)=>{if(i===0&&line.includes('会社名'))return;const cols=line.split(',').map(s=>s.replace(/^"|"$/g,'').trim());if(!cols[0])return;const[company,contactName,tel,email,address,shipAddress,shippingMode]=cols;if(!clients.find(c=>c.company===company)){clients.push({id:'c_'+Date.now()+i,company,contactName:contactName||'',tel:tel||'',email:email||'',address:address||'',shipAddress:shipAddress||'',shippingMode:shippingMode||'same'});count++;}});persist();renderClientMaster();st.textContent=count+'件を取得しました（重複除外済み）';}
+  catch(e){st.textContent='取得に失敗しました。';}
+}
+
+async function fetchClientsFromSheetFull(){
+  if(!confirm('アプリ内の取引先マスタを全削除してスプレッドシートから再取得します。よろしいですか？'))return;
+  if(!settings.clientUrl){alert('設定タブで取引先マスタ取得URLを登録してください');return;}
+  const st=document.getElementById('client-fetch-status');st.textContent='全削除して取得中…';clients=[];
+  try{const res=await fetch(settings.clientUrl);const text=await res.text();const lines=text.split('\n').filter(l=>l.trim());let count=0;lines.forEach((line,i)=>{if(i===0&&line.includes('会社名'))return;const cols=line.split(',').map(s=>s.replace(/^"|"$/g,'').trim());if(!cols[0])return;const[company,contactName,tel,email,address,shipAddress,shippingMode]=cols;clients.push({id:'c_'+Date.now()+i,company,contactName:contactName||'',tel:tel||'',email:email||'',address:address||'',shipAddress:shipAddress||'',shippingMode:shippingMode||'same'});count++;});persist();renderClientMaster();st.textContent=count+'件を取得しました（全件更新）';}
+  catch(e){st.textContent='取得に失敗しました。';}
+}
+
+function exportClientCSV(){
+  if(!clients.length){alert('取引先マスタにデータがありません');return;}
+  const bom='\uFEFF';const hdr='会社名,担当者名,電話番号,メールアドレス,住所,発送先住所,発送先区分';
+  const rows=clients.map(c=>[c.company,c.contactName||'',c.tel||'',c.email||'',c.address||'',c.shipAddress||'',c.shippingMode||'same'].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv=bom+[hdr,...rows].join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='取引先マスタ_'+new Date().toLocaleDateString('ja-JP').replace(/\//g,'')+'.csv';a.click();
+}
+
+function confirmDeleteAll(target){
+  deleteTarget=target;
+  const count=target==='master'?products.length:clients.length;
+  const name=target==='master'?'商品マスタ':'取引先マスタ';
+  document.getElementById('del-modal-title').textContent=name+'の全削除';
+  document.getElementById('del-modal-body').textContent=count+'件のデータを全削除します。\nこの操作はアプリ内データのみを削除します。スプレッドシート上のデータは削除されません。\n\n確認のため「削除」と入力してください。';
+  document.getElementById('del-confirm-input').value='';
+  document.getElementById('del-confirm-btn').disabled=true;
+  document.getElementById('delete-modal').classList.add('show');
+}
+function checkDeleteInput(){document.getElementById('del-confirm-btn').disabled=(document.getElementById('del-confirm-input').value!=='削除');}
+function closeDeleteModal(){document.getElementById('delete-modal').classList.remove('show');deleteTarget=null;}
+function executeDelete(){
+  if(deleteTarget==='master'){products=[];persist();renderMaster();}
+  else if(deleteTarget==='clients'){clients=[];persist();renderClientMaster();}
+  closeDeleteModal();alert('削除しました');
+}
+
+function exportCSV(){
+  if(!orders.length){alert('受注データがありません');return;}
+  const hdr=['状態','受注番号','注文日','展示会名','会社名','ご担当者様名','電話番号','メールアドレス','住所','発送先','カテゴリー','型番','素材','サイズ','台帳備考','任意入力欄（石変更・空枠・支給など）','数量','単価(税抜)','掛け率','小計(掛け率後)','商品合計(税抜)','掛け率後合計','消費税率','消費税','請求金額(税込)','支払方法','支払状況','納品納期','特記事項','担当者名'];
+  const rows=[hdr];
+  orders.forEach(o=>{const sa=o.shippingMode==='same'?o.address:o.shipAddress;o.rows.forEach((r,i)=>{rows.push([o.isDraft?'一時保存':'確定',o.orderNum||'',o.orderDate,o.eventName||'',o.company,o.contactName||'',o.tel||'',o.email||'',o.address||'',sa||'',r.category||'',r.model,r.mat||'',r.size||'',r.memo||'',r.stone||'',r.qty,r.price,r.rr,r.sub,i===0?o.subtotal:'',i===0?o.afterRate:'',i===0?o.taxRate+'%':'',i===0?o.tax:'',i===0?o.total:'',i===0?o.payment:'',i===0?o.payStatus||'':'',i===0?o.delivery||'':'',i===0?o.notes||'':'',i===0?o.staff:'']);});});
+  const bom='\uFEFF';const csv=bom+rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='受注データ_'+new Date().toLocaleDateString('ja-JP').replace(/\//g,'')+'.csv';a.click();
+}
+</script>
+
+</body>
+</html>
