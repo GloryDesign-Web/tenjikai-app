@@ -791,7 +791,7 @@ async function doSaveOrder(order){
   const st=document.getElementById('sync-status');
   if(settings.gsUrl){
     st.textContent='スプレッドシートに送信中…';
-    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress})});st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
+    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress,token:settings.token||''})});st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
     catch(e){st.textContent='⚠ 送信に失敗しました。CSVでバックアップしてください。';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。\nスプレッドシートへの送信に失敗しました。別途ご確認ください。');}
   }else{st.textContent='※ スプレッドシートURL未設定のため端末内のみに保存しました';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。');}
   editingOrderId=null;currentOrderNum=null;resetForm();
