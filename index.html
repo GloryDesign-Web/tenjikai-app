@@ -168,6 +168,11 @@ textarea{resize:vertical;min-height:55px;}
       <div><label>メールアドレス</label><input type="email" id="email" placeholder="example@example.com" oninput="onClientFieldChange()"></div>
     </div>
     <label>住所</label>
+    <div style="display:flex;gap:6px;margin-bottom:4px;">
+      <input type="text" id="zip-input" placeholder="郵便番号（ハイフンなし）" style="max-width:180px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      <button class="btn btn-sm" onclick="searchZip()">住所を検索</button>
+      <span id="zip-status" style="font-size:12px;color:#888;align-self:center;"></span>
+    </div>
     <input type="text" id="address" placeholder="〒000-0000 都道府県市区町村…" oninput="onClientFieldChange()">
     <label>発送先</label>
     <div class="toggle-group">
@@ -188,7 +193,7 @@ textarea{resize:vertical;min-height:55px;}
     <div class="section-title">ご注文内容</div>
     <div class="prod-header">
       <span>画像</span><span>カテゴリー・型番・素材・サイズ・台帳備考・任意入力欄</span>
-      <span>数量</span><span>単価(税抜)</span><span>掛け率</span><span>小計(掛後)</span><span></span>
+      <span>数量</span><span>上代単価(税抜)</span><span>掛け率</span><span>小計(掛後)</span><span></span>
     </div>
     <div id="prod-rows"></div>
     <button class="add-btn" onclick="addRow()">＋ 商品を追加</button>
@@ -460,7 +465,7 @@ let orderCounters={};
   }catch(e){}
   buildMonthSelects();applySettings();renderMaster();
   document.getElementById('count-badge').textContent='('+orders.length+')';
-  document.getElementById('order-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('order-date').value='';
   updateDraftBar();addRow();
 })();
 
@@ -478,7 +483,7 @@ function generateOrderNum(){
   const d=new Date();
   const ds=(d.getMonth()+1).toString().padStart(2,'0')+d.getDate().toString().padStart(2,'0');
   const key=safe+'-'+ds;
-  if(!orderCounters[key])orderCounters[key]=0;
+  if(!orderCounters[key])orderCounters[key]=110;
   orderCounters[key]++;
   return safe+'-'+ds+'-'+orderCounters[key].toString().padStart(3,'0');
 }
@@ -669,7 +674,7 @@ function selectModel(id,model){
   const prods=products.filter(p=>p.model===model);
   const mats=[...new Set(prods.map(p=>p.material).filter(Boolean))];
   const ms=document.getElementById('mat-'+id);
-  if(ms){ms.innerHTML=mats.length?'':'<option value="">−</option>';mats.forEach(m=>{const o=new Option(m,m);ms.appendChild(o);});if(mats.length===1)ms.value=mats[0];}
+  if(ms){ms.innerHTML=mats.length?'':'<option value="">−</option>';mats.forEach(m=>{const o=new Option(m,m);ms.appendChild(o);});ms.appendChild(new Option('手入力','__manual__'));if(mats.length===1)ms.value=mats[0];}
   const ci=document.getElementById('cat-'+id);if(ci)ci.value=prods[0]?.category||'';
   const mi=document.getElementById('memo-'+id);if(mi)mi.value=prods[0]?.memo||'';
   const wi=prods.find(p=>p.imgData);if(wi)setThumb(id,wi.imgData);
@@ -689,7 +694,16 @@ function addRow(data){
   const ai=document.createElement('input');ai.type='text';ai.className='ac-input';ai.id='ac-inp-'+id;ai.placeholder='型番を検索…';
   aw.appendChild(ai);r1.appendChild(catInp);r1.appendChild(aw);mid.appendChild(r1);
   const r2=document.createElement('div');r2.className='prod-row12';
-  const ms=document.createElement('select');ms.id='mat-'+id;ms.style.fontSize='12px';ms.innerHTML='<option value="">素材</option>';ms.onchange=()=>fillPriceFromMat(id,document.getElementById('ac-inp-'+id)?.value.trim(),ms.value);
+  const ms=document.createElement('select');ms.id='mat-'+id;ms.style.fontSize='12px';ms.innerHTML='<option value="">素材</option>';ms.onchange=()=>{
+    if(ms.value==='__manual__'){
+      let mi=document.getElementById('mat-manual-'+id);
+      if(!mi){mi=document.createElement('input');mi.type='text';mi.id='mat-manual-'+id;mi.style.fontSize='12px';mi.style.marginTop='3px';mi.placeholder='素材を入力';mi.oninput=calcTotals;ms.parentNode.appendChild(mi);}
+      mi.style.display='';
+    }else{
+      const mi=document.getElementById('mat-manual-'+id);if(mi)mi.style.display='none';
+      fillPriceFromMat(id,document.getElementById('ac-inp-'+id)?.value.trim(),ms.value);
+    }
+  };
   const si=document.createElement('input');si.type='text';si.id='sz-'+id;si.style.fontSize='12px';si.placeholder='サイズ';si.oninput=calcTotals;
   r2.appendChild(ms);r2.appendChild(si);mid.appendChild(r2);
   const mi=document.createElement('input');mi.type='text';mi.id='memo-'+id;mi.style.fontSize='12px';mi.placeholder='台帳記載の備考';mi.oninput=calcTotals;mid.appendChild(mi);
@@ -744,7 +758,9 @@ function getRows(){
   document.querySelectorAll('.prod-row').forEach(row=>{
     const id=row.id.replace('pr-','');
     const model=document.getElementById('ac-inp-'+id)?.value.trim()||'';
-    const mat=document.getElementById('mat-'+id)?.value||'';
+    const matSel=document.getElementById('mat-'+id);
+    const matManual=document.getElementById('mat-manual-'+id);
+    const mat=matSel?.value==='__manual__'?(matManual?.value||''):(matSel?.value||'');
     const size=document.getElementById('sz-'+id)?.value.trim()||'';
     const memo=document.getElementById('memo-'+id)?.value.trim()||'';
     const stone=document.getElementById('st-'+id)?.value.trim()||'';
@@ -791,8 +807,8 @@ async function doSaveOrder(order){
   const st=document.getElementById('sync-status');
   if(settings.gsUrl){
     st.textContent='スプレッドシートに送信中…';
-    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress,token:settings.token||''})});st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
-    catch(e){st.textContent='⚠ 送信に失敗しました。CSVでバックアップしてください。';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。\nスプレッドシートへの送信に失敗しました。別途ご確認ください。');}
+    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress,token:settings.token||''})});order.sendFailed=false;const si=orders.findIndex(o=>o.id===order.id);if(si>=0)orders[si]=order;persist();st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
+    catch(e){order.sendFailed=true;const fi=orders.findIndex(o=>o.id===order.id);if(fi>=0)orders[fi]=order;persist();st.textContent='⚠ 送信に失敗しました。CSVでバックアップしてください。';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。\nスプレッドシートへの送信に失敗しました。別途ご確認ください。');}
   }else{st.textContent='※ スプレッドシートURL未設定のため端末内のみに保存しました';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。');}
   editingOrderId=null;currentOrderNum=null;resetForm();
 }
@@ -810,7 +826,7 @@ function saveOrder(){
 
 function resetForm(){
   ['company','contact-name','tel','email','address','ship-addr','notes','staff'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('order-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('order-date').value='';
   document.getElementById('payment').value='';document.getElementById('pay-status').value='';
   currentClientId=null;document.getElementById('client-actions').style.display='none';
   setShip('same');document.getElementById('prod-rows').innerHTML='';rowId=0;
@@ -832,22 +848,33 @@ function renderList(){
     if(!q)return true;
     return(o.orderNum&&o.orderNum.toLowerCase().includes(q))||o.company.toLowerCase().includes(q)||(o.staff&&o.staff.toLowerCase().includes(q))||(o.rows&&o.rows.some(r=>r.model.toLowerCase().includes(q)));
   });
+  filtered.sort((a,b)=>(b.orderDate||'').localeCompare(a.orderDate||''));
   const c=document.getElementById('orders-wrap');
   if(!filtered.length){c.innerHTML='<div class="empty">該当するデータがありません</div>';return;}
-  c.innerHTML=`<div style="overflow-x:auto;"><table class="orders-table"><thead><tr><th>状態</th><th>受注番号</th><th>注文日</th><th>会社名</th><th>担当者</th><th>請求金額(税込)</th><th>支払方法</th><th>納品納期</th><th>操作</th></tr></thead><tbody>
-  ${filtered.map(o=>`<tr><td>${o.isDraft?'<span class="badge badge-warn">一時保存</span>':'<span class="badge">確定</span>'}</td><td style="font-family:monospace;font-size:11px;">${o.orderNum||'−'}</td><td>${o.orderDate||''}</td><td style="font-weight:600">${o.company}</td><td>${o.staff}</td><td style="font-weight:600">¥${o.total.toLocaleString()}</td><td>${o.payment||'−'}</td><td>${o.delivery||''}</td><td><div style="display:flex;gap:3px;flex-wrap:wrap;"><button class="btn btn-sm" onclick="loadOrderToForm(${o.id},'edit')">編集</button>${!o.isDraft?`<button class="btn btn-sm" onclick="loadOrderToForm(${o.id},'copy')">複写</button>`:''}<button class="btn btn-sm" onclick="resend(${o.id})">再送信</button><button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteOrder(${o.id})">削除</button></div></td></tr>`).join('')}
+  c.innerHTML=`<div style="overflow-x:auto;"><table class="orders-table"><thead><tr><th>状態</th><th>受注番号</th><th>注文日</th><th>会社名</th><th>請求金額(税込)</th><th>操作</th></tr></thead><tbody>
+  ${filtered.map(o=>{
+    const failMark=o.sendFailed?'<span title="送信に失敗しています。再送信をお試しください。" style="color:#e53935;margin-left:4px;cursor:help;">⚠</span>':'';
+    const statusBadge=o.isDraft?'<span class="badge badge-warn">一時保存</span>':'<span class="badge">確定</span>';
+    return`<tr><td>${statusBadge}${failMark}</td><td style="font-family:monospace;font-size:11px;white-space:nowrap;">${o.orderNum||'−'}</td><td style="white-space:nowrap;">${o.orderDate||''}</td><td style="font-weight:600">${o.company}</td><td style="font-weight:600;white-space:nowrap;">¥${o.total.toLocaleString()}</td><td><div style="display:flex;gap:3px;flex-wrap:wrap;"><button class="btn btn-sm" onclick="loadOrderToForm(${o.id},'edit')">編集</button>${!o.isDraft?`<button class="btn btn-sm" onclick="loadOrderToForm(${o.id},'copy')">複写</button>`:''}<button class="btn btn-sm" onclick="resend(${o.id})">再送信</button><button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteOrder(${o.id})">削除</button></div></td></tr>`;
+  }).join('')}
   </tbody></table></div>`;
 }
 
 function loadOrderToForm(id,mode){
   const order=orders.find(o=>o.id===id);if(!order)return;showTab('form');
-  document.getElementById('order-date').value=order.orderDate||'';document.getElementById('staff').value=order.staff||'';document.getElementById('company').value=order.company||'';document.getElementById('contact-name').value=order.contactName||'';document.getElementById('tel').value=order.tel||'';document.getElementById('email').value=order.email||'';document.getElementById('address').value=order.address||'';document.getElementById('ship-addr').value=order.shipAddress||'';setShip(order.shippingMode||'same');document.getElementById('payment').value=order.payment||'';document.getElementById('pay-status').value=order.payStatus||'';document.getElementById('notes').value=order.notes||'';
+  document.getElementById('order-date').value=mode==='edit'?(order.orderDate||''):'';document.getElementById('staff').value=order.staff||'';document.getElementById('company').value=order.company||'';document.getElementById('contact-name').value=order.contactName||'';document.getElementById('tel').value=order.tel||'';document.getElementById('email').value=order.email||'';document.getElementById('address').value=order.address||'';document.getElementById('ship-addr').value=order.shipAddress||'';setShip(order.shippingMode||'same');document.getElementById('payment').value=order.payment||'';document.getElementById('pay-status').value=order.payStatus||'';document.getElementById('notes').value=order.notes||'';
   const del=order.delivery||'';const isPeriod=['上旬','中旬','下旬'].some(p=>del.endsWith(p));
   if(isPeriod){setDel('period');const dm=document.getElementById('del-month');if(dm)dm.value=del.slice(0,-2);const dt=document.getElementById('del-timing');if(dt)dt.value=del.slice(-2);}
   else{setDel('date');document.getElementById('del-date').value=del;}
   document.getElementById('prod-rows').innerHTML='';rowId=0;(order.rows||[]).forEach(r=>addRow(r));
   if(mode==='edit'){editingOrderId=order.id;currentOrderNum=order.orderNum||null;updateOrderNumBar(order.orderNum||null);document.getElementById('sync-status').textContent=(order.isDraft?'一時保存データを読み込みました。':'確定済みデータを編集中です。')+'修正後「受注を保存/送信」で更新してください。';}
-  else{editingOrderId=null;currentOrderNum=null;updateOrderNumBar(null);document.getElementById('sync-status').textContent='受注データを複写しました。内容を確認し保存してください。（新しい受注番号が付与されます）';}
+  else{editingOrderId=null;currentOrderNum=null;updateOrderNumBar(null);document.getElementById('sync-status').textContent='';
+    const copyBar=document.getElementById('order-num-bar');
+    copyBar.style.display='flex';
+    copyBar.style.background='#fff8e1';
+    copyBar.style.borderColor='#ffe082';
+    copyBar.style.color='#e65100';
+    document.getElementById('order-num-display').textContent='複写元：'+(order.orderNum||'−')+'　内容をご確認のうえ、必要な項目を修正して保存してください。新しい受注番号が付与されます。';}
   onClientFieldChange();
 }
 
@@ -972,7 +999,7 @@ function exportCSV(){
   if(!orders.length){alert('受注データがありません');return;}
   const hdr=['状態','受注番号','注文日','展示会名','会社名','ご担当者様名','電話番号','メールアドレス','住所','発送先','カテゴリー','型番','素材','サイズ','台帳備考','任意入力欄（石変更・空枠・支給など）','数量','単価(税抜)','掛け率','小計(掛け率後)','商品合計(税抜)','掛け率後合計','消費税率','消費税','請求金額(税込)','支払方法','支払状況','納品納期','特記事項','担当者名'];
   const rows=[hdr];
-  orders.forEach(o=>{const sa=o.shippingMode==='same'?o.address:o.shipAddress;o.rows.forEach((r,i)=>{rows.push([o.isDraft?'一時保存':'確定',o.orderNum||'',o.orderDate,o.eventName||'',o.company,o.contactName||'',o.tel||'',o.email||'',o.address||'',sa||'',r.category||'',r.model,r.mat||'',r.size||'',r.memo||'',r.stone||'',r.qty,r.price,r.rr,r.sub,i===0?o.subtotal:'',i===0?o.afterRate:'',i===0?o.taxRate+'%':'',i===0?o.tax:'',i===0?o.total:'',i===0?o.payment:'',i===0?o.payStatus||'':'',i===0?o.delivery||'':'',i===0?o.notes||'':'',i===0?o.staff:'']);});});
+  orders.forEach(o=>{const sa=o.shippingMode==='same'?o.address:o.shipAddress;o.rows.forEach((r,i)=>{rows.push([i===0?(o.isDraft?'一時保存':'確定'):'',i===0?(o.orderNum||''):'',i===0?o.orderDate:'',i===0?(o.eventName||''):'',i===0?o.company:'',i===0?(o.contactName||''):'',i===0?(o.tel||''):'',i===0?(o.email||''):'',i===0?(o.address||''):'',i===0?(sa||''):'',r.category||'',r.model,r.mat||'',r.size||'',r.memo||'',r.stone||'',r.qty,r.price,r.rr,r.sub,i===0?o.subtotal:'',i===0?o.afterRate:'',i===0?o.taxRate+'%':'',i===0?o.tax:'',i===0?o.total:'',i===0?o.payment:'',i===0?o.payStatus||'':'',i===0?o.delivery||'':'',i===0?o.notes||'':'',i===0?o.staff:'']);});});
   const bom='\uFEFF';const csv=bom+rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='受注データ_'+new Date().toLocaleDateString('ja-JP').replace(/\//g,'')+'.csv';a.click();
 }
