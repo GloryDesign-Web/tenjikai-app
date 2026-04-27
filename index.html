@@ -112,6 +112,7 @@ textarea{resize:vertical;min-height:55px;}
 .rec-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#e3f2fd;color:#1565c0;margin-left:6px;}
 .section-sub{font-size:13px;font-weight:600;color:#444;margin:12px 0 6px;padding-top:8px;border-top:1px solid #f5f5f3;}
 .img-mock{background:#f5f5f3;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px;font-family:monospace;font-size:12px;color:#555;line-height:1.8;margin:8px 0;}
+.copied-field{background:#fffde7 !important;border-color:#ffe082 !important;}
 .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;}
 .modal-overlay.show{display:flex;}
 .modal{background:#fff;border-radius:12px;padding:1.5rem;max-width:420px;width:92%;}
@@ -477,15 +478,23 @@ function persist(){
   localStorage.setItem('oms11_oc',JSON.stringify(orderCounters));
 }
 
-function generateOrderNum(){
-  const en=settings.eventName||'ORDER';
+function generateOrderNum(orderDate){
+  const en=settings.eventName||'';
   const safe=en.replace(/[^a-zA-Z0-9\u3040-\u9FFF]/g,'');
-  const d=new Date();
-  const ds=(d.getMonth()+1).toString().padStart(2,'0')+d.getDate().toString().padStart(2,'0');
-  const key=safe+'-'+ds;
+  // 注文日から日付部分を取得
+  let ds;
+  if(orderDate){
+    const d=new Date(orderDate);
+    ds=(d.getMonth()+1).toString().padStart(2,'0')+d.getDate().toString().padStart(2,'0');
+  }else{
+    const d=new Date();
+    ds=(d.getMonth()+1).toString().padStart(2,'0')+d.getDate().toString().padStart(2,'0');
+  }
+  const prefix=safe?safe+'-'+ds:ds;
+  const key=prefix;
   if(!orderCounters[key])orderCounters[key]=110;
   orderCounters[key]++;
-  return safe+'-'+ds+'-'+orderCounters[key].toString().padStart(3,'0');
+  return prefix+'-'+orderCounters[key].toString().padStart(3,'0');
 }
 
 function buildMonthSelects(){
@@ -699,8 +708,12 @@ function addRow(data){
       let mi=document.getElementById('mat-manual-'+id);
       if(!mi){mi=document.createElement('input');mi.type='text';mi.id='mat-manual-'+id;mi.style.fontSize='12px';mi.style.marginTop='3px';mi.placeholder='素材を入力';mi.oninput=calcTotals;ms.parentNode.appendChild(mi);}
       mi.style.display='';
+      const stoneInp=document.getElementById('st-'+id);
+      if(stoneInp&&!stoneInp.value)stoneInp.value='特注素材';
     }else{
       const mi=document.getElementById('mat-manual-'+id);if(mi)mi.style.display='none';
+      const stoneInp=document.getElementById('st-'+id);
+      if(stoneInp&&stoneInp.value==='特注素材')stoneInp.value='';
       fillPriceFromMat(id,document.getElementById('ac-inp-'+id)?.value.trim(),ms.value);
     }
   };
@@ -790,7 +803,7 @@ function buildOrderObject(isDraft,num){
 function saveDraft(){
   const company=document.getElementById('company').value.trim();const staff=document.getElementById('staff').value.trim();
   if(!company||!staff){alert('会社名と担当者名は入力してください');return;}
-  const num=currentOrderNum||(editingOrderId?orders.find(o=>o.id===editingOrderId)?.orderNum:null)||generateOrderNum();
+  const num=currentOrderNum||(editingOrderId?orders.find(o=>o.id===editingOrderId)?.orderNum:null)||generateOrderNum(document.getElementById('order-date').value);
   currentOrderNum=num;
   const order=buildOrderObject(true,num);
   const idx=editingOrderId?orders.findIndex(o=>o.id===editingOrderId):-1;
@@ -807,7 +820,7 @@ async function doSaveOrder(order){
   const st=document.getElementById('sync-status');
   if(settings.gsUrl){
     st.textContent='スプレッドシートに送信中…';
-    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress,token:settings.token||''})});order.sendFailed=false;const si=orders.findIndex(o=>o.id===order.id);if(si>=0)orders[si]=order;persist();st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
+    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress,token:settings.token||'',isEdit:!!editingOrderId})});order.sendFailed=false;const si=orders.findIndex(o=>o.id===order.id);if(si>=0)orders[si]=order;persist();st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
     catch(e){order.sendFailed=true;const fi=orders.findIndex(o=>o.id===order.id);if(fi>=0)orders[fi]=order;persist();st.textContent='⚠ 送信に失敗しました。CSVでバックアップしてください。';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。\nスプレッドシートへの送信に失敗しました。別途ご確認ください。');}
   }else{st.textContent='※ スプレッドシートURL未設定のため端末内のみに保存しました';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。');}
   editingOrderId=null;currentOrderNum=null;resetForm();
@@ -818,14 +831,14 @@ function saveOrder(){
   if(!company||!staff||!orderDate){alert('注文日・会社名・担当者名は必須です');return;}
   const rows=getRows();if(!rows.length){alert('型番と単価を入力してください');return;}
   if(!document.getElementById('payment').value){alert('お支払い方法を選択してください');return;}
-  const num=currentOrderNum||(editingOrderId?orders.find(o=>o.id===editingOrderId)?.orderNum:null)||generateOrderNum();
+  const num=currentOrderNum||(editingOrderId?orders.find(o=>o.id===editingOrderId)?.orderNum:null)||generateOrderNum(document.getElementById('order-date').value);
   const order=buildOrderObject(false,num);
   if(!settings.gsUrl){showModal('受注データ送信URLが未設定です','スプレッドシートへの送信が行われません。\nアプリ内のみに保存されますが、続行しますか？',[{label:'キャンセル',cls:'',action:()=>{}},{label:'アプリ内のみ保存',cls:'btn-warn',action:()=>doSaveOrder(order)}]);}
   else{doSaveOrder(order);}
 }
 
 function resetForm(){
-  ['company','contact-name','tel','email','address','ship-addr','notes','staff'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['company','contact-name','tel','email','address','ship-addr','notes','staff'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.classList.remove('copied-field');}});
   document.getElementById('order-date').value='';
   document.getElementById('payment').value='';document.getElementById('pay-status').value='';
   currentClientId=null;document.getElementById('client-actions').style.display='none';
@@ -867,14 +880,22 @@ function loadOrderToForm(id,mode){
   if(isPeriod){setDel('period');const dm=document.getElementById('del-month');if(dm)dm.value=del.slice(0,-2);const dt=document.getElementById('del-timing');if(dt)dt.value=del.slice(-2);}
   else{setDel('date');document.getElementById('del-date').value=del;}
   document.getElementById('prod-rows').innerHTML='';rowId=0;(order.rows||[]).forEach(r=>addRow(r));
-  if(mode==='edit'){editingOrderId=order.id;currentOrderNum=order.orderNum||null;updateOrderNumBar(order.orderNum||null);document.getElementById('sync-status').textContent=(order.isDraft?'一時保存データを読み込みました。':'確定済みデータを編集中です。')+'修正後「受注を保存/送信」で更新してください。';}
+  if(mode==='edit'){editingOrderId=order.id;currentOrderNum=order.orderNum||null;
+    const numBar=document.getElementById('order-num-bar');
+    numBar.style.display='flex';numBar.style.background='#f0f7ff';numBar.style.borderColor='#b3d9f7';numBar.style.color='#1565c0';
+    document.getElementById('order-num-display').textContent=(order.orderNum||'−')+(order.isDraft?'　【一時保存を編集中】':'　【編集中】');
+    document.getElementById('sync-status').textContent='修正後「受注を保存/送信」で更新してください。';}
   else{editingOrderId=null;currentOrderNum=null;updateOrderNumBar(null);document.getElementById('sync-status').textContent='';
     const copyBar=document.getElementById('order-num-bar');
     copyBar.style.display='flex';
     copyBar.style.background='#fff8e1';
     copyBar.style.borderColor='#ffe082';
     copyBar.style.color='#e65100';
-    document.getElementById('order-num-display').textContent='複写元：'+(order.orderNum||'−')+'　内容をご確認のうえ、必要な項目を修正して保存してください。新しい受注番号が付与されます。';}
+    document.getElementById('order-num-display').textContent='複写元：'+(order.orderNum||'−')+'　内容をご確認のうえ、必要な項目を修正して保存してください。新しい受注番号が付与されます。';
+    // 複写時に引き継がれた項目に黄色背景を付ける
+    ['contact-name','tel','email','address','ship-addr','payment','pay-status'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.classList.add('copied-field');
+    });}
   onClientFieldChange();
 }
 
@@ -1002,6 +1023,24 @@ function exportCSV(){
   orders.forEach(o=>{const sa=o.shippingMode==='same'?o.address:o.shipAddress;o.rows.forEach((r,i)=>{rows.push([i===0?(o.isDraft?'一時保存':'確定'):'',i===0?(o.orderNum||''):'',i===0?o.orderDate:'',i===0?(o.eventName||''):'',i===0?o.company:'',i===0?(o.contactName||''):'',i===0?(o.tel||''):'',i===0?(o.email||''):'',i===0?(o.address||''):'',i===0?(sa||''):'',r.category||'',r.model,r.mat||'',r.size||'',r.memo||'',r.stone||'',r.qty,r.price,r.rr,r.sub,i===0?o.subtotal:'',i===0?o.afterRate:'',i===0?o.taxRate+'%':'',i===0?o.tax:'',i===0?o.total:'',i===0?o.payment:'',i===0?o.payStatus||'':'',i===0?o.delivery||'':'',i===0?o.notes||'':'',i===0?o.staff:'']);});});
   const bom='\uFEFF';const csv=bom+rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='受注データ_'+new Date().toLocaleDateString('ja-JP').replace(/\//g,'')+'.csv';a.click();
+}
+
+async function searchZip(){
+  const zip=document.getElementById('zip-input').value.replace(/-/g,'');
+  const st=document.getElementById('zip-status');
+  if(zip.length!==7){st.textContent='7桁で入力してください';return;}
+  st.textContent='検索中…';
+  try{
+    const res=await fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode='+zip);
+    const json=await res.json();
+    if(json.results&&json.results.length>0){
+      const r=json.results[0];
+      const addr=r.address1+r.address2+r.address3;
+      document.getElementById('address').value='〒'+zip.slice(0,3)+'-'+zip.slice(3)+' '+addr;
+      st.textContent='✓ 住所を入力しました';
+      onClientFieldChange();
+    }else{st.textContent='該当する住所が見つかりません';}
+  }catch(e){st.textContent='検索に失敗しました';}
 }
 </script>
 
