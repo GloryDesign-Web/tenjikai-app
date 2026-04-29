@@ -41,7 +41,7 @@ textarea{resize:vertical;min-height:55px;}
 .toggle-btn{padding:5px 12px;border-radius:7px;font-size:12px;cursor:pointer;border:1px solid #e0e0e0;background:#fff;color:#666;}
 .toggle-btn.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
 
-.prod-row{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:1rem;margin-bottom:10px;}
+.prod-row{display:grid;grid-template-columns:60px 1fr 62px 80px 74px 80px 30px;gap:4px;margin-bottom:8px;align-items:start;}
 .prod-thumb{width:56px;height:56px;border-radius:8px;border:1px solid #e0e0e0;background:#f5f5f3;display:flex;align-items:center;justify-content:center;font-size:10px;color:#aaa;cursor:pointer;overflow:hidden;flex-shrink:0;}
 .prod-thumb img{width:100%;height:100%;object-fit:cover;}
 .prod-mid{display:flex;flex-direction:column;gap:3px;}
@@ -119,6 +119,7 @@ textarea{resize:vertical;min-height:55px;}
 .modal-title{font-size:15px;font-weight:600;margin-bottom:10px;}
 .modal-body{font-size:13px;color:#444;margin-bottom:12px;line-height:1.7;white-space:pre-wrap;}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+.prod-header{display:grid;grid-template-columns:60px 1fr 62px 80px 74px 80px 30px;gap:4px;font-size:11px;color:#888;padding:0 2px;margin-bottom:3px;}
 </style>
 </head>
 <body>
@@ -193,6 +194,10 @@ textarea{resize:vertical;min-height:55px;}
   <div class="section">
     <div class="section-title">ご注文内容</div>
 
+    <div class="prod-header">
+      <span>画像</span><span>カテゴリー・型番・素材・サイズ・台帳備考・任意入力欄</span>
+      <span>数量</span><span>上代単価(税抜)</span><span>掛け率</span><span>小計(掛後)</span><span></span>
+    </div>
     <div id="prod-rows"></div>
     <button class="add-btn" onclick="addRow()">＋ 商品を追加</button>
     <div class="metrics">
@@ -749,56 +754,28 @@ function closeAC(id){const l=document.getElementById('ac-list-'+id);if(l)l.style
 function addRow(data){
   const id=++rowId;
   const div=document.createElement('div');div.className='prod-row';div.id='pr-'+id;
-
-  // カードヘッダー
-  const hdr=document.createElement('div');hdr.style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
-  const hdrLabel=document.createElement('div');hdrLabel.style='font-size:12px;font-weight:500;color:#888;';hdrLabel.id='hdr-'+id;
-  const rb=document.createElement('button');rb.className='rm-btn';rb.textContent='×';rb.onclick=()=>{div.remove();calcTotals();updateRowLabels();};
-  hdr.appendChild(hdrLabel);hdr.appendChild(rb);div.appendChild(hdr);
-
-  // 画像＋型番・素材エリア
-  const topRow=document.createElement('div');topRow.style='display:grid;grid-template-columns:64px 1fr;gap:10px;margin-bottom:8px;';
-  const imgArea=document.createElement('div');imgArea.style='display:flex;flex-direction:column;gap:4px;align-items:center;';
-  const thumb=document.createElement('div');thumb.className='prod-thumb';thumb.id='th-'+id;thumb.textContent='画像';thumb.onclick=()=>uploadThumb(id);
-  const catInp=document.createElement('input');catInp.type='text';catInp.id='cat-'+id;catInp.style='font-size:10px;padding:3px 5px;text-align:center;width:62px;border:1px solid #e0e0e0;border-radius:5px;';catInp.placeholder='カテゴリー';
-  imgArea.appendChild(thumb);imgArea.appendChild(catInp);
-
-  const infoArea=document.createElement('div');infoArea.style='display:flex;flex-direction:column;gap:5px;';
+  const thumb=document.createElement('div');thumb.className='prod-thumb';thumb.id='th-'+id;thumb.textContent='画像';thumb.onclick=()=>uploadThumb(id);div.appendChild(thumb);
+  const mid=document.createElement('div');mid.className='prod-mid';
+  const r1=document.createElement('div');r1.className='prod-row12';
+  const catInp=document.createElement('input');catInp.type='text';catInp.id='cat-'+id;catInp.style.fontSize='12px';catInp.placeholder='カテゴリー';
   const aw=document.createElement('div');aw.className='ac-wrap';aw.id='ac-wrap-'+id;
   const ai=document.createElement('input');ai.type='text';ai.className='ac-input';ai.id='ac-inp-'+id;ai.placeholder='型番を検索…';
-  aw.appendChild(ai);
-  const matSzRow=document.createElement('div');matSzRow.style='display:grid;grid-template-columns:1fr 1fr;gap:5px;';
-  const ms=document.createElement('input');ms.type='text';ms.id='mat-'+id;ms.style.fontSize='13px';ms.placeholder='素材';ms.oninput=calcTotals;
-  const si=document.createElement('input');si.type='text';si.id='sz-'+id;si.style.fontSize='13px';si.placeholder='サイズ';si.oninput=calcTotals;
-  matSzRow.appendChild(ms);matSzRow.appendChild(si);
-  const mi=document.createElement('input');mi.type='text';mi.id='memo-'+id;mi.style.fontSize='13px';mi.placeholder='台帳記載の備考';mi.oninput=calcTotals;
-  const sti=document.createElement('input');sti.type='text';sti.id='st-'+id;sti.style.fontSize='13px';sti.placeholder='任意入力欄（石変更・空枠・支給など）';sti.oninput=calcTotals;
-  infoArea.appendChild(aw);infoArea.appendChild(matSzRow);infoArea.appendChild(mi);infoArea.appendChild(sti);
-  topRow.appendChild(imgArea);topRow.appendChild(infoArea);div.appendChild(topRow);
-
-  // 数量・単価・掛け率
-  const btmRow=document.createElement('div');btmRow.style='border-top:1px solid #f0f0ee;padding-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end;';
-  const qtyWrap=document.createElement('div');
-  const qtyLabel=document.createElement('div');qtyLabel.style='font-size:11px;color:#888;margin-bottom:3px;';qtyLabel.textContent='数量';
-  const qi=document.createElement('input');qi.type='number';qi.id='qty-'+id;qi.value=data?.qty||1;qi.min=1;qi.oninput=calcTotals;qi.style.textAlign='center';
-  qtyWrap.appendChild(qtyLabel);qtyWrap.appendChild(qi);
-  const priceWrap=document.createElement('div');
-  const priceLabel=document.createElement('div');priceLabel.style='font-size:11px;color:#888;margin-bottom:3px;';priceLabel.textContent='上代単価（税抜）';
-  const pi=document.createElement('input');pi.type='number';pi.id='price-'+id;pi.placeholder='単価';pi.oninput=calcTotals;
-  priceWrap.appendChild(priceLabel);priceWrap.appendChild(pi);
-  const rrWrap=document.createElement('div');
-  const rrLabel=document.createElement('div');rrLabel.style='font-size:11px;color:#888;margin-bottom:3px;';rrLabel.textContent='掛け率';
-  const ri=document.createElement('select');ri.id='rr-'+id;ri.style.fontSize='13px';
+  aw.appendChild(ai);r1.appendChild(catInp);r1.appendChild(aw);mid.appendChild(r1);
+  const r2=document.createElement('div');r2.className='prod-row12';
+  const ms=document.createElement('input');ms.type='text';ms.id='mat-'+id;ms.style.fontSize='12px';ms.placeholder='素材';ms.oninput=calcTotals;
+  const si=document.createElement('input');si.type='text';si.id='sz-'+id;si.style.fontSize='12px';si.placeholder='サイズ';si.oninput=calcTotals;
+  r2.appendChild(ms);r2.appendChild(si);mid.appendChild(r2);
+  const mi=document.createElement('input');mi.type='text';mi.id='memo-'+id;mi.style.fontSize='12px';mi.placeholder='台帳記載の備考';mi.oninput=calcTotals;mid.appendChild(mi);
+  const sti=document.createElement('input');sti.type='text';sti.id='st-'+id;sti.style.fontSize='12px';sti.placeholder='任意入力欄（石変更・空枠・支給など）';sti.oninput=calcTotals;mid.appendChild(sti);
+  div.appendChild(mid);
+  const qi=document.createElement('input');qi.type='number';qi.id='qty-'+id;qi.value=data?.qty||1;qi.min=1;qi.oninput=calcTotals;qi.style.textAlign='center';div.appendChild(qi);
+  const pi=document.createElement('input');pi.type='number';pi.id='price-'+id;pi.placeholder='上代単価';pi.oninput=calcTotals;div.appendChild(pi);
+  const ri=document.createElement('select');ri.id='rr-'+id;ri.style.fontSize='12px';
   [40,41,42,43,44,45,46,47,48,49,50].forEach(v=>{const o=document.createElement('option');o.value=(v/100).toFixed(2);o.textContent=v+'%';if(v===Math.round(settings.defaultRate*100))o.selected=true;ri.appendChild(o);});
-  ri.onchange=calcTotals;rrWrap.appendChild(rrLabel);rrWrap.appendChild(ri);
-  btmRow.appendChild(qtyWrap);btmRow.appendChild(priceWrap);btmRow.appendChild(rrWrap);div.appendChild(btmRow);
-
-  // 小計
-  const sd=document.createElement('div');sd.id='sb-'+id;sd.style='text-align:right;margin-top:8px;font-size:13px;color:#888;';
-  sd.innerHTML='小計（掛後）<span id="sb-val-'+id+'" style="font-size:16px;font-weight:600;color:#1a1a1a;margin-left:8px;">¥0</span>';
-  div.appendChild(sd);
-
-  document.getElementById('prod-rows').appendChild(div);buildAC(id);updateRowLabels();
+  ri.onchange=calcTotals;div.appendChild(ri);
+  const sd=document.createElement('div');sd.id='sb-'+id;sd.style='font-size:12px;text-align:right;padding-top:9px;font-weight:600;';sd.textContent='¥0';div.appendChild(sd);
+  const rb=document.createElement('button');rb.className='rm-btn';rb.textContent='×';rb.onclick=()=>{div.remove();calcTotals();};div.appendChild(rb);
+  document.getElementById('prod-rows').appendChild(div);buildAC(id);
   if(data){
     const a=document.getElementById('ac-inp-'+id);if(a)a.value=data.model||'';
     const c=document.getElementById('cat-'+id);if(c)c.value=data.category||'';
@@ -991,7 +968,7 @@ function renderMaster(){
   document.getElementById('master-count').textContent=products.length;
   const g=document.getElementById('master-grid');
   if(!filtered.length){g.innerHTML='<div class="empty">'+(q?'該当する商品がありません':'商品が登録されていません')+'</div>';return;}
-  g.innerHTML=filtered.map(p=>{const ri=products.indexOf(p);return`<div class="master-card"><button class="master-del" onclick="confirmDelProduct(${ri},'${p.model.replace(/'/g,"\\'")}','${(p.material||'').replace(/'/g,"\\'")}')">×</button><div class="master-img">${p.imgData?`<img src="${p.imgData}">`:'画像なし'}</div><div class="master-name">${p.model}</div><div class="master-sub">${p.category||''}</div><div class="master-sub">${p.material||''}</div><div class="master-sub">¥${Number(p.price).toLocaleString()}</div>${p.memo?`<div class="master-sub" style="font-size:10px;color:#aaa;">${p.memo}</div>`:''}<input type="file" accept="image/*" style="font-size:10px;margin-top:4px;" onchange="setProdImg(${ri},this)"></div>`;}).join('');
+  g.innerHTML=filtered.map(p=>{const ri=products.indexOf(p);return`<div class="master-card"><button class="master-del" onclick="confirmDelProduct(${ri},'${p.model.replace(/'/g,"\\'")}','${(p.material||'').replace(/'/g,"\\'")}')">×</button><div class="master-img" onclick="triggerProdImg(${ri})" style="cursor:pointer;" title="クリックして画像を選択">${p.imgData?`<img src="${p.imgData}">`:'<div style=\'text-align:center;\'>画像なし<br><span style=\'font-size:10px;color:#bbb;\'>クリックで選択</span></div>'}</div><div class="master-name">${p.model}</div><div class="master-sub">${p.category||''}</div><div class="master-sub">${p.material||''}</div><div class="master-sub">¥${Number(p.price).toLocaleString()}</div>${p.memo?`<div class="master-sub" style="font-size:10px;color:#aaa;">${p.memo}</div>`:''}</div>`;}).join('');
 }
 
 function setProdImg(i,inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{products[i].imgData=e.target.result;persist();renderMaster();};r.readAsDataURL(f);}
@@ -1136,6 +1113,12 @@ function updateRowLabels(){
     const lbl=document.getElementById('hdr-'+id);
     if(lbl)lbl.textContent='商品 '+num;
   });
+}
+
+function triggerProdImg(i){
+  const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+  inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{products[i].imgData=ev.target.result;persist();renderMaster();};r.readAsDataURL(f);};
+  inp.click();
 }
 </script>
 
