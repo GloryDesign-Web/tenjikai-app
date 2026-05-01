@@ -870,9 +870,9 @@ async function doSaveOrder(order){
   const st=document.getElementById('sync-status');
   if(settings.gsUrl){
     st.textContent='スプレッドシートに送信中…';
-    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress,token:settings.token||'',isEdit:!!editingOrderId})});order.sendFailed=false;const si=orders.findIndex(o=>o.id===order.id);if(si>=0)orders[si]=order;persist();st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
+    try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({...order,shipAddress:shipMode==='same'?order.address:order.shipAddress,token:settings.token||'',action:editingOrderId?'update':'add'})});order.sendFailed=false;const si=orders.findIndex(o=>o.id===order.id);if(si>=0)orders[si]=order;persist();st.textContent='✓ 送信しました（'+new Date().toLocaleTimeString('ja-JP')+'）';setTimeout(()=>{if(st.textContent.startsWith('✓'))st.textContent='';},5000);alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注を保存し、スプレッドシートへ送信しました。');}
     catch(e){order.sendFailed=true;const fi=orders.findIndex(o=>o.id===order.id);if(fi>=0)orders[fi]=order;persist();st.textContent='⚠ 送信に失敗しました。CSVでバックアップしてください。';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。\nスプレッドシートへの送信に失敗しました。別途ご確認ください。');}
-  }else{st.textContent='※ スプレッドシートURL未設定のため端末内のみに保存しました';alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。');}
+  }else{st.textContent='※ アプリ内のみに保存しました';setTimeout(()=>{if(st.textContent.startsWith('※'))st.textContent='';},5000);alert('受注番号：'+order.orderNum+'\n「'+order.company+'」の受注をアプリ内に保存しました。');}
   editingOrderId=null;currentOrderNum=null;resetForm();
 }
 
@@ -898,7 +898,7 @@ function resetForm(){
   currentClientId=null;document.getElementById('client-actions').style.display='none';
   setShip('same');document.getElementById('prod-rows').innerHTML='';rowId=0;
   editingOrderId=null;currentOrderNum=null;updateOrderNumBar(null);
-  applyDefaultDelivery();calcTotals();addRow();
+  applyDefaultDelivery();calcTotals();addRow();document.getElementById('sync-status').textContent='';
 }
 
 function filterOrders(type){
@@ -952,7 +952,13 @@ function loadOrderToForm(id,mode){
 
 function confirmDeleteOrder(id){
   const order=orders.find(o=>o.id===id);if(!order)return;
-  showModal('この受注データをアプリ内から削除しますか？','受注番号：'+(order.orderNum||'−')+'\n会社名：'+order.company+'\n\n※ スプレッドシート上のデータは削除されません。\n　 受注番号をもとに、スプレッドシート側でも\n　 別途削除をお願いいたします。',[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:()=>{orders=orders.filter(o=>o.id!==id);persist();updateDraftBar();renderList();}}]);
+  showModal('この受注データをアプリ内から削除しますか？','受注番号：'+(order.orderNum||'−')+'\n会社名：'+order.company+'\n\n※ スプレッドシート上のデータは削除されません。\n　 受注番号をもとに、スプレッドシート側でも\n　 別途削除をお願いいたします。',[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:async()=>{
+      if(settings.gsUrl&&order.orderNum&&!order.isDraft){
+        try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({action:'delete',orderNum:order.orderNum,token:settings.token||''})});}
+        catch(e){console.log('削除連携失敗',e);}
+      }
+      orders=orders.filter(o=>o.id!==id);persist();updateDraftBar();renderList();
+    }}]);
 }
 
 async function resend(id){
