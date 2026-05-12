@@ -253,9 +253,14 @@ textarea{resize:vertical;min-height:55px;}
 <div id="tab-master" style="display:none;">
   <div class="section">
     <div class="section-title">商品マスタの取得元</div>
-    <div class="toggle-group" style="margin-bottom:10px;">
-      <button class="toggle-btn on" id="src-sheet" onclick="setMasterSrc('sheet')">スプレッドシートから取得</button>
-      <button class="toggle-btn" id="src-local" onclick="setMasterSrc('local')">このアプリ内（CSV）</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <div id="master-src-toggle" style="display:none;">
+        <div class="toggle-group">
+          <button class="toggle-btn on" id="src-sheet" onclick="setMasterSrc('sheet')">スプレッドシート</button>
+          <button class="toggle-btn" id="src-local" onclick="setMasterSrc('local')">CSV</button>
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="document.getElementById('master-src-toggle').style.display=document.getElementById('master-src-toggle').style.display==='none'?'flex':'none';" style="font-size:11px;padding:4px 10px;color:#888;border-color:#ccc;">取得元変更</button>
     </div>
     <div id="master-sheet-area">
       <div class="info-box">スプレッドシートの「商品マスタ」シートから取得します。設定タブでURLを登録してください。</div>
@@ -277,6 +282,7 @@ textarea{resize:vertical;min-height:55px;}
   <div class="section">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
       <div class="section-title" style="margin:0;border:none;padding:0;">登録済み商品 (<span id="master-count">0</span>件)</div>
+        <div style="font-size:12px;color:#888;margin-top:4px;">※ アプリ内での編集・削除はアプリ内にのみ反映されます。スプレッドシート側の商品マスタには反映されません。</div>
       <div style="display:flex;gap:6px;">
         <button class="btn btn-sm btn-info" onclick="exportMasterCSV()">マスタDL</button>
         <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteAll('master')">全削除</button>
@@ -290,9 +296,14 @@ textarea{resize:vertical;min-height:55px;}
 <div id="tab-clients" style="display:none;">
   <div class="section">
     <div class="section-title">取引先マスタの取得元</div>
-    <div class="toggle-group" style="margin-bottom:10px;">
-      <button class="toggle-btn on" id="csrc-sheet" onclick="setClientSrc('sheet')">スプレッドシートから取得</button>
-      <button class="toggle-btn" id="csrc-local" onclick="setClientSrc('local')">このアプリ内</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <div id="client-src-toggle" style="display:none;">
+        <div class="toggle-group">
+          <button class="toggle-btn on" id="csrc-sheet" onclick="setClientSrc('sheet')">スプレッドシート</button>
+          <button class="toggle-btn" id="csrc-local" onclick="setClientSrc('local')">CSV</button>
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="document.getElementById('client-src-toggle').style.display=document.getElementById('client-src-toggle').style.display==='none'?'block':'none';" style="font-size:11px;padding:4px 10px;color:#888;border-color:#ccc;">取得元変更</button>
     </div>
     <div id="client-sheet-area">
       <div class="info-box">スプレッドシートの「取引先マスタ」シートから取得します。設定タブでURLを登録してください。</div>
@@ -304,12 +315,17 @@ textarea{resize:vertical;min-height:55px;}
       <div class="note-box">初めて取得する場合は「スプレッドシートから取得する」を使用してください。スプレッドシート側でデータを追加・変更・削除した場合は「全削除して再取得」で最新の状態に更新してください。</div>
     </div>
     <div id="client-local-area" style="display:none;">
-      <p style="font-size:13px;color:#888;">注文入力時に取引先情報を入力し「新規登録」でマスタに追加できます。</p>
+      <div class="info-box">CSVファイルから取引先マスタを取り込みます。</div>
+      <p style="font-size:12px;color:#888;margin:8px 0;">フォーマット：会社名, 担当者名, 電話番号, メールアドレス, 住所, 発送先住所, 発送先区分</p>
+      <div class="row2">
+        <div><label>CSVファイルを選択</label><input type="file" id="client-csv-file" accept=".csv" onchange="importClientCSV(this)"></div>
+      </div>
     </div>
   </div>
   <div class="section">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
       <div class="section-title" style="margin:0;border:none;padding:0;">取引先マスタ (<span id="clients-count">0</span>件)</div>
+        <div style="font-size:12px;color:#888;margin-top:4px;">※ アプリ内での新規登録・更新は、スプレッドシートにも自動で反映されます。（設定タブで「取引先マスタ反映URL」の登録が必要です）</div>
       <div style="display:flex;gap:6px;">
         <button class="btn btn-sm btn-info" onclick="exportClientCSV()">マスタDL</button>
         <button class="btn btn-sm btn-danger-outline" onclick="confirmDeleteAll('clients')">全削除</button>
@@ -627,8 +643,8 @@ function setDel(m){
   document.getElementById('del-date-box').style.display=m==='date'?'':'none';
 }
 
-function setMasterSrc(s){masterSrc=s;document.getElementById('src-sheet').classList.toggle('on',s==='sheet');document.getElementById('src-local').classList.toggle('on',s==='local');document.getElementById('master-sheet-area').style.display=s==='sheet'?'':'none';document.getElementById('master-local-area').style.display=s==='local'?'':'none';}
-function setClientSrc(s){clientSrc=s;document.getElementById('csrc-sheet').classList.toggle('on',s==='sheet');document.getElementById('csrc-local').classList.toggle('on',s==='local');document.getElementById('client-sheet-area').style.display=s==='sheet'?'':'none';document.getElementById('client-local-area').style.display=s==='local'?'':'none';}
+function setMasterSrc(s){masterSrc=s;document.getElementById('src-sheet').classList.toggle('on',s==='sheet');document.getElementById('src-local').classList.toggle('on',s==='local');document.getElementById('master-sheet-area').style.display=s==='sheet'?'':'none';document.getElementById('master-local-area').style.display=s==='local'?'':'none';if(s==='sheet'){document.getElementById('master-src-toggle').style.display='none';}}
+function setClientSrc(s){clientSrc=s;document.getElementById('csrc-sheet').classList.toggle('on',s==='sheet');document.getElementById('csrc-local').classList.toggle('on',s==='local');document.getElementById('client-sheet-area').style.display=s==='sheet'?'':'none';document.getElementById('client-local-area').style.display=s==='local'?'':'none';if(s==='sheet'){document.getElementById('client-src-toggle').style.display='none';}}
 
 function getClientFields(){return{company:document.getElementById('company').value.trim(),contactName:document.getElementById('contact-name').value.trim(),tel:document.getElementById('tel').value.trim(),email:document.getElementById('email').value.trim(),address:document.getElementById('address').value.trim(),shipAddress:document.getElementById('ship-addr').value.trim(),shippingMode:shipMode};}
 function fillClientFields(c){document.getElementById('company').value=c.company||'';document.getElementById('contact-name').value=c.contactName||'';document.getElementById('tel').value=c.tel||'';document.getElementById('email').value=c.email||'';document.getElementById('address').value=c.address||'';document.getElementById('ship-addr').value=c.shipAddress||'';setShip(c.shippingMode||'same');currentClientId=c.id;updateClientButtons();}
@@ -1125,6 +1141,35 @@ function triggerProdImg(i){
   const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
   inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{products[i].imgData=ev.target.result;persist();renderMaster();};r.readAsDataURL(f);};
   inp.click();
+}
+
+function importClientCSV(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split('\n');
+    let added=0;
+    lines.forEach((line,i)=>{
+      if(i===0||!line.trim())return;
+      const cols=line.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+      if(!cols[0])return;
+      const existing=clients.findIndex(c=>c.company===cols[0]);
+      const obj={
+        id:existing>=0?clients[existing].id:Date.now()+Math.random(),
+        company:cols[0]||'',
+        contactName:cols[1]||'',
+        tel:cols[2]||'',
+        email:cols[3]||'',
+        address:cols[4]||'',
+        shipAddress:cols[5]||'',
+        shippingMode:cols[6]||'same'
+      };
+      if(existing>=0){clients[existing]=obj;}else{clients.push(obj);added++;}
+    });
+    persist();renderClients();
+    alert(added+'件の取引先を取り込みました。');
+  };
+  reader.readAsText(file,'UTF-8');
 }
 </script>
 
