@@ -1022,8 +1022,6 @@ function importCSV(inp){
   r.readAsText(f,'UTF-8');
 }
 
-}
-
 function exportMasterCSV(){
   if(!products.length){alert('商品マスタにデータがありません');return;}
   const bom='\uFEFF';const hdr='カテゴリー,型番,素材,上代単価(税抜),台帳備考';
