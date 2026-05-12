@@ -275,7 +275,7 @@ textarea{resize:vertical;min-height:55px;}
       <p style="font-size:13px;color:#888;margin-bottom:8px;">フォーマット：カテゴリー, 型番, 素材, 単価（税抜）, 台帳備考</p>
       <div class="row2">
         <div><label>CSVファイルを選択</label><input type="file" id="csv-file" accept=".csv" onchange="importCSV(this)"></div>
-        <div style="display:flex;align-items:flex-end;"><button class="btn" onclick="dlTemplate()">テンプレートDL</button></div>
+        
       </div>
     </div>
   </div>
@@ -348,7 +348,7 @@ textarea{resize:vertical;min-height:55px;}
       <div class="guide-step">3. 「商品マスタ」タブ→「スプレッドシートから取得する」をクリック</div>
       <div class="guide-step" style="color:#e65100;">※ カテゴリーごとにシートを分けず、1シートにまとめてください。</div>
       <div class="section-sub">取得方法② CSVファイルでインポート</div>
-      <div class="guide-step">1. 「テンプレートDL」で雛形CSVをダウンロードする</div>
+      
       <div class="guide-step">2. ExcelまたはGoogleスプレッドシートで編集し、CSV形式で保存する</div>
       <div class="guide-step">3. 「商品マスタ」タブ→「CSVファイルを選択」で取り込む</div>
       <div class="warn-box">方法②は端末ごとにデータが独立しており、複数端末での共有はできません。ExcelでCSVを開く際に警告が表示される場合がありますが、そのまま編集・CSV形式で保存して問題ありません。</div>
@@ -1022,9 +1022,6 @@ function importCSV(inp){
   r.readAsText(f,'UTF-8');
 }
 
-function dlTemplate(){
-  const bom='\uFEFF';const csv=bom+'カテゴリー,型番,素材,単価（税抜）,台帳備考\nリング,AAA,K18,20000,\nリング,AAA,K10,10000,\nピアス,BBB,K18,15000,フープタイプ\n';
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='商品マスタ_テンプレート.csv';a.click();
 }
 
 function exportMasterCSV(){
