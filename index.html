@@ -952,7 +952,7 @@ function loadOrderToForm(id,mode){
 
 function confirmDeleteOrder(id){
   const order=orders.find(o=>o.id===id);if(!order)return;
-  showModal('この受注データをアプリ内から削除しますか？','受注番号：'+(order.orderNum||'−')+'\n会社名：'+order.company+'\n\n※ スプレッドシート上のデータは削除されません。\n　 受注番号をもとに、スプレッドシート側でも\n　 別途削除をお願いいたします。',[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:async()=>{
+  showModal('この受注データをアプリおよびスプレッドシートから削除します。','受注番号：'+(order.orderNum||'−')+'\n会社名：'+order.company+'\n\nこの操作は元に戻せません。',[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:async()=>{
       if(settings.gsUrl&&order.orderNum&&!order.isDraft){
         try{await fetch(settings.gsUrl,{method:'POST',body:JSON.stringify({action:'delete',orderNum:order.orderNum,token:settings.token||''})});}
         catch(e){console.log('削除連携失敗',e);}
