@@ -1040,7 +1040,19 @@ function renderClientMaster(){
 }
 
 function confirmDelClient(id,company){
-  showModal('この取引先をアプリ内から削除しますか？','会社名：'+company+'\n\n※ スプレッドシート上のデータは削除されません。\n　 スプレッドシート側でも別途削除をお願いいたします。',[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:()=>{clients=clients.filter(c=>c.id!==id);persist();renderClientMaster();document.getElementById('clients-count').textContent=clients.length;}}]);
+  const msg=settings.clientGsUrl
+    ?'会社名：'+company+'\n\nこの操作は元に戻せません。'
+    :'会社名：'+company+'\n\n※ スプレッドシート上のデータは削除されません。\n　 スプレッドシート側でも別途削除をお願いいたします。';
+  const title=settings.clientGsUrl
+    ?'この取引先をアプリおよびスプレッドシートから削除します。'
+    :'この取引先をアプリ内から削除しますか？';
+  showModal(title,msg,[{label:'キャンセル',cls:'',action:()=>{}},{label:'削除する',cls:'btn-danger-outline',action:async()=>{
+    if(settings.clientGsUrl){
+      try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'delete',company:company,token:settings.token||''})});}
+      catch(e){console.log('取引先削除連携失敗',e);}
+    }
+    clients=clients.filter(c=>c.id!==id);persist();renderClientMaster();document.getElementById('clients-count').textContent=clients.length;
+  }}]);
 }
 
 async function fetchClientsFromSheet(){
