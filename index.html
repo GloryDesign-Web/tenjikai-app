@@ -680,8 +680,8 @@ function clearClientSearch(){
 async function doRegisterNewClient(f){
   const nc={...f,id:'c_'+Date.now()};clients.push(nc);currentClientId=nc.id;persist();updateClientButtons();
   if(settings.clientGsUrl){
-    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'add',data:nc,token:settings.token||''})});alert('「'+f.company+'」を登録しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
-    catch(e){alert('「'+f.company+'」を登録しました。\nスプレッドシートへの反映に失敗しました。別途ご確認ください。');}
+    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'add',data:nc,token:settings.token||''})});nc.syncFailed=false;const si=clients.findIndex(c=>c.id===nc.id);if(si>=0)clients[si]=nc;persist();renderClientMaster();alert('「'+f.company+'」を登録しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
+    catch(e){nc.syncFailed=true;const fi=clients.findIndex(c=>c.id===nc.id);if(fi>=0)clients[fi]=nc;persist();renderClientMaster();alert('「'+f.company+'」を登録しました。\nスプレッドシートへの反映に失敗しました。別途ご確認ください。');}
   }else{alert('「'+f.company+'」をアプリ内マスタに登録しました。');}
 }
 function registerNewClient(){
@@ -694,8 +694,8 @@ function registerNewClient(){
 async function doUpdateClient(idx,f){
   clients[idx]={...clients[idx],...f};persist();
   if(settings.clientGsUrl){
-    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'update',data:clients[idx],token:settings.token||''})});alert('「'+f.company+'」を更新しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
-    catch(e){alert('「'+f.company+'」をアプリ内で更新しました。\nスプレッドシートへの反映に失敗しました。別途ご確認ください。');}
+    try{await fetch(settings.clientGsUrl,{method:'POST',body:JSON.stringify({action:'update',data:clients[idx],token:settings.token||''})});clients[idx].syncFailed=false;persist();renderClientMaster();alert('「'+f.company+'」を更新しました。\nアプリ内マスタとスプレッドシートの両方に反映されました。');}
+    catch(e){clients[idx].syncFailed=true;persist();renderClientMaster();alert('「'+f.company+'」をアプリ内で更新しました。\nスプレッドシートへの反映に失敗しました。別途ご確認ください。');}
   }else{alert('「'+f.company+'」をアプリ内マスタで更新しました。');}
 }
 function updateClient(){
@@ -1036,7 +1036,10 @@ function renderClientMaster(){
   document.getElementById('clients-count').textContent=clients.length;
   const w=document.getElementById('clients-wrap');
   if(!filtered.length){w.innerHTML='<div class="empty">'+(q?'該当する取引先がありません':'取引先が登録されていません')+'</div>';return;}
-  w.innerHTML=`<div style="overflow-x:auto;"><table class="client-master-table"><thead><tr><th>会社名</th><th>担当者名</th><th>電話番号</th><th>メール</th><th>住所</th><th></th></tr></thead><tbody>${filtered.map(c=>`<tr><td style="font-weight:600">${c.company}</td><td>${c.contactName||'−'}</td><td>${c.tel||'−'}</td><td style="font-size:11px;">${c.email||'−'}</td><td style="font-size:11px;">${c.address||'−'}</td><td><button class="btn btn-sm btn-danger-outline" onclick="confirmDelClient('${c.id}','${c.company.replace(/'/g,"\\'")}')">削除</button></td></tr>`).join('')}</tbody></table></div>`;
+  w.innerHTML=`<div style="overflow-x:auto;"><table class="client-master-table"><thead><tr><th>会社名</th><th>担当者名</th><th>電話番号</th><th>メール</th><th>住所</th><th></th></tr></thead><tbody>${filtered.map(c=>{
+    const failMark=c.syncFailed?'<span title="スプレッドシートへの同期に失敗しています。再度操作をお試しください。" style="color:#e53935;margin-left:4px;cursor:help;">⚠</span>':'';
+    return`<tr><td style="font-weight:600">${c.company}${failMark}</td><td>${c.contactName||'−'}</td><td>${c.tel||'−'}</td><td style="font-size:11px;">${c.email||'−'}</td><td style="font-size:11px;">${c.address||'−'}</td><td><button class="btn btn-sm btn-danger-outline" onclick="confirmDelClient('${c.id}','${c.company.replace(/'/g,"\\'")}')">削除</button></td></tr>`;
+  }).join('')}</tbody></table></div>`;
 }
 
 function confirmDelClient(id,company){
