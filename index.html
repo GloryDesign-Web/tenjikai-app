@@ -424,28 +424,28 @@ textarea{resize:vertical;min-height:55px;}
       </div>
       <div class="setting-row">
         <div class="setting-label">受注データ送信URL<div class="setting-sub">Apps Script（受注用）</div><div class="gs-status"><span class="gs-dot" id="gs-dot"></span><span id="gs-txt">未設定</span></div></div>
-        <div class="setting-val"><input type="url" id="s-gsurl" placeholder="https://script.google.com/macros/s/…/exec"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('gsurl')">保存</button><button class="btn btn-sm" onclick="testGS('gsurl')">接続テスト</button></div><div class="info-box">「受注を保存/送信」時に自動送信します。未設定の場合は確認ダイアログが表示されます。</div></div>
+        <div class="setting-val"><input type="url" id="s-gsurl" placeholder="https://script.google.com/macros/s/…/exec"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('gsurl')">保存</button><button class="btn btn-sm" onclick="testGS('gsurl')">接続テスト</button></div><div class="info-box">「受注を保存/送信」時に自動送信します。未設定の場合は確認ダイアログが表示されます。受注データ用スプレッドシートの「拡張機能」→「Apps Script」→「デプロイを管理」からコピーしたURLを設定してください。</div></div>
       </div>
       <div class="setting-row">
-        <div class="setting-label">商品マスタ取得URL<div class="setting-sub">商品マスタ用スプレッドシートのCSVリンク</div></div>
-        <div class="setting-val"><input type="url" id="s-masterurl" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv&gid=…"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('masterurl')">保存</button></div><div class="warn-box">アクセスを許可したGoogleアカウントのみが閲覧できるよう共有設定を行い、CSVエクスポートURLを貼り付けてください。</div></div>
+        <div class="setting-label">商品マスタ取得URL<div class="setting-sub">商品マスタ用スプレッドシートのURL</div></div>
+        <div class="setting-val"><input type="url" id="s-masterurl" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv&gid=…"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('masterurl')">保存</button></div><div class="info-box">商品マスタ用スプレッドシートのURLの「/edit#gid=0」を「/export?format=csv&gid=0」に書き換えたURLを設定してください。</div></div>
       </div>
       <div class="setting-row">
-        <div class="setting-label">取引先マスタ取得URL<div class="setting-sub">取引先マスタ用スプレッドシートのCSVリンク</div></div>
-        <div class="setting-val"><input type="url" id="s-clienturl" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv&gid=…"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('clienturl')">保存</button></div><div class="warn-box">アクセスを許可したGoogleアカウントのみが閲覧できるよう共有設定を行い、CSVエクスポートURLを貼り付けてください。</div></div>
+        <div class="setting-label">取引先マスタ取得URL<div class="setting-sub">取引先マスタ用スプレッドシートのURL</div></div>
+        <div class="setting-val"><input type="url" id="s-clienturl" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv&gid=…"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('clienturl')">保存</button></div><div class="info-box">取引先マスタ用スプレッドシートのURLの「/edit#gid=0」を「/export?format=csv&gid=0」に書き換えたURLを設定してください。</div></div>
       </div>
       <div class="setting-row">
+        <div class="setting-label">取引先マスタ反映URL<div class="setting-sub">Apps Script（取引先マスタ用）</div><div class="gs-status"><span class="gs-dot" id="gs-client-dot"></span><span id="gs-client-txt">未設定</span></div></div>
+        <div class="setting-val"><input type="url" id="s-clientgsurl" placeholder="https://script.google.com/macros/s/…/exec"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('clientgsurl')">保存</button><button class="btn btn-sm" onclick="testGS('clientgsurl')">接続テスト</button></div><div class="info-box">取引先の新規登録・更新・削除時にスプレッドシートへ自動反映します。未設定の場合は確認ダイアログが表示されます。取引先マスタ用スプレッドシートの「拡張機能」→「Apps Script」→「デプロイを管理」からコピーしたURLを設定してください。</div></div>
+      </div><div class="setting-row">
         <div class="setting-label">送信トークン<div class="setting-sub">スプレッドシート送信時の認証キー</div></div>
         <div class="setting-val">
           <input type="password" id="s-token" placeholder="パスワードを入力">
           <div class="row-actions"><button class="btn btn-sm" onclick="saveS('token')">保存</button></div>
-          <div class="info-box">受注データ送信時にGAS側で照合されます。Apps Scriptに設定したパスワードと同じ値を入力してください。</div>
+          <div class="info-box">受注データ・取引先マスタの送信時に使用する認証用パスワードです。Apps Scriptの「SECRET_TOKEN」に設定した値と同じものを入力してください。</div>
         </div>
       </div>
-      <div class="setting-row">
-        <div class="setting-label">取引先マスタ反映URL<div class="setting-sub">Apps Script（取引先マスタ用）</div><div class="gs-status"><span class="gs-dot" id="gs-client-dot"></span><span id="gs-client-txt">未設定</span></div></div>
-        <div class="setting-val"><input type="url" id="s-clientgsurl" placeholder="https://script.google.com/macros/s/…/exec"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('clientgsurl')">保存</button><button class="btn btn-sm" onclick="testGS('clientgsurl')">接続テスト</button></div><div class="info-box">取引先の新規登録・更新時にスプレッドシートへ自動反映します。未設定の場合は確認ダイアログが表示されます。</div></div>
-      </div>
+      
     </div>
   </div>
 </div>
