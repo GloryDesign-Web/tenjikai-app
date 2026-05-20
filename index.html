@@ -206,6 +206,20 @@ textarea{resize:vertical;min-height:55px;}
       <div class="metric"><div class="metric-label">消費税(<span id="m-tr">10</span>%)</div><div class="metric-value" id="m-tax">¥0</div></div>
       <div class="metric"><div class="metric-label">請求金額(税込)</div><div class="metric-value" id="m-total">¥0</div></div>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+      <button class="btn btn-sm" id="discount-btn" onclick="toggleDiscount()" style="font-size:11px;padding:3px 10px;color:#888;border-color:#ccc;">値引きを追加</button>
+    </div>
+    <div id="discount-area" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 14px;margin-top:8px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:13px;color:#555;">値引き額：</span>
+        <input type="number" id="discount-inp" placeholder="0" oninput="calcTotals()" style="width:130px;font-size:13px;padding:5px 8px;border:1px solid #e0e0e0;border-radius:6px;">
+        <span style="font-size:12px;color:#e65100;">値引き額は「-」を付けて入力してください</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;color:#555;">最終請求金額：</span>
+        <span class="metric-value" id="m-final" style="font-size:18px;font-weight:600;">¥0</span>
+      </div>
+    </div>
   </div>
   <div class="pay-del-grid">
     <div class="subsection">
@@ -272,7 +286,7 @@ textarea{resize:vertical;min-height:55px;}
       <div class="note-box">初めて取得する場合は「スプレッドシートから取得する」を使用してください。スプレッドシート側でデータを追加・変更・削除した場合は「全削除して再取得」で最新の状態に更新してください。</div>
     </div>
     <div id="master-local-area" style="display:none;">
-      <p style="font-size:13px;color:#888;margin-bottom:8px;">フォーマット：カテゴリー, 型番, 素材, 単価（税抜）, 台帳備考</p>
+      <p style="font-size:13px;color:#888;margin-bottom:8px;">フォーマット：カテゴリー, 型番, 素材, 上代単価(税抜), 台帳備考</p>
       <div class="row2">
         <div><label>CSVファイルを選択</label><input type="file" id="csv-file" accept=".csv" onchange="importCSV(this)"></div>
         
@@ -343,24 +357,27 @@ textarea{resize:vertical;min-height:55px;}
     <div class="guide-block">
       <div class="guide-block-title">商品マスタ</div>
       <div class="section-sub">取得方法① スプレッドシートから取得<span class="rec-badge">推奨</span></div>
-      <div class="guide-step">1. Googleスプレッドシートに「商品マスタ」シートを1つ作成する</div>
+      <div class="guide-step">1. Googleスプレッドシートに「商品マスタ」シートを作成する</div>
       <div class="guide-step">2. 設定タブに「商品マスタ取得URL」を登録する</div>
       <div class="guide-step">3. 「商品マスタ」タブ→「スプレッドシートから取得する」をクリック</div>
       <div class="guide-step" style="color:#e65100;">※ カテゴリーごとにシートを分けず、1シートにまとめてください。</div>
       <div class="section-sub">取得方法② CSVファイルでインポート</div>
-      
-      <div class="guide-step">2. ExcelまたはGoogleスプレッドシートで編集し、CSV形式で保存する</div>
-      <div class="guide-step">3. 「商品マスタ」タブ→「CSVファイルを選択」で取り込む</div>
+      <div class="guide-step">1. ExcelまたはGoogleスプレッドシートで商品データを作成し、CSV形式で保存する</div>
+      <div class="guide-step">2. 「商品マスタ」タブ→「取得元変更」→「CSV」→「CSVファイルを選択」で取り込む</div>
       <div class="warn-box">方法②は端末ごとにデータが独立しており、複数端末での共有はできません。ExcelでCSVを開く際に警告が表示される場合がありますが、そのまま編集・CSV形式で保存して問題ありません。</div>
       <div class="section-sub">CSVフォーマット</div>
-      <div style="font-family:monospace;font-size:13px;color:#1565c0;margin:6px 0 8px;padding:8px 12px;background:#f0f7ff;border-radius:6px;">カテゴリー, 型番, 素材, 単価（税抜）, 台帳備考</div>
+      <div style="font-family:monospace;font-size:13px;color:#1565c0;margin:6px 0 8px;padding:8px 12px;background:#f0f7ff;border-radius:6px;">カテゴリー, 型番, 素材, 上代単価(税抜), 台帳備考</div>
       <div style="font-size:12px;color:#555;line-height:1.8;">・同じ型番で素材が異なる場合は複数行に分けて登録してください（素材ごとに価格を設定できます）<br>・台帳備考は任意です。注文入力時に型番を選択すると自動表示されます</div>
       <div class="section-sub">更新方法</div>
       <table class="guide-table"><thead><tr><th>操作</th><th>内容</th><th>向いているケース</th></tr></thead><tbody>
         <tr><td>スプレッドシートから取得する</td><td>未登録の商品のみ追加（重複除外）</td><td>新商品の追加のみ</td></tr>
         <tr><td>全削除して再取得</td><td>アプリ内データを全消去してから再取得</td><td>価格変更・修正がある場合</td></tr>
       </tbody></table>
-      <div class="note-box" style="margin-top:8px;">アプリ内での編集・削除はアプリ内マスタのみに反映されます。スプレッドシートへの反映は「マスタDL」でCSVとして書き出し、手動で反映してください。</div>
+      <div class="note-box" style="margin-top:8px;">アプリ内での編集・削除はアプリ内にのみ反映されます。スプレッドシート側の商品マスタには反映されません。</div>
+      <div class="section-sub">展示会ごとの更新運用</div>
+      <div class="guide-step">【初回】商品マスタ用スプレッドシートを作成（例：商品マスタ_YJF2026）し、CSVエクスポートURLを設定タブに登録する</div>
+      <div class="guide-step">【次回展示会】スプレッドシートをコピーして保存用としてリネーム（例：商品マスタ_YJF2026_保存用）し、元のファイルを最新展示会用に編集・更新する</div>
+      <div class="note-box">元のファイルのURLは変わらないため、アプリの設定タブのURLを毎回変更する必要がありません。</div>
     </div>
     <div class="guide-block">
       <div class="guide-block-title">取引先マスタ</div>
@@ -371,8 +388,9 @@ textarea{resize:vertical;min-height:55px;}
       <div class="section-sub">取得方法② 注文入力時に直接登録</div>
       <div class="guide-step">1. 注文入力画面でお取引先様情報を入力する</div>
       <div class="guide-step">2. 「新規登録」ボタンを押すと、アプリ内マスタとスプレッドシートの両方に追加される</div>
-      <div class="guide-step">3. 既存取引先の情報を変更した場合は「マスタを更新」ボタンで両方に反映される</div>
-      <div class="success-box">設定タブで「取引先マスタ反映URL（Apps Script）」を登録すると、新規登録・更新時にスプレッドシートへ自動反映されます。未設定の場合は確認ダイアログが表示され、アプリ内のみへの保存を選択できます。</div>
+      <div class="guide-step">3. 既存取引先の情報を変更した場合は「マスタを更新」ボタンで両方に反映される
+      <div class="guide-step">4. 取引先を削除した場合も、アプリ内マスタとスプレッドシートの両方から削除される</div></div>
+      <div class="success-box">設定タブで「取引先マスタ反映URL（Apps Script）」を登録すると、新規登録・更新・削除時にスプレッドシートへ自動反映されます。未設定の場合は確認ダイアログが表示され、アプリ内のみへの保存を選択できます。</div>
       <div class="note-box" style="margin-top:8px;">個人のお客様など登録が不要な場合は「新規登録」ボタンを押さずにそのまま注文を保存・送信できます。</div>
     </div>
     <div class="guide-block">
@@ -423,6 +441,14 @@ textarea{resize:vertical;min-height:55px;}
         </div>
       </div>
       <div class="setting-row">
+        <div class="setting-label">端末識別子<div class="setting-sub">受注番号に含まれる端末固有のID（例：G01・T01・P01）</div></div>
+        <div class="setting-val">
+          <input type="text" id="s-terminal" placeholder="例：G01" maxlength="4" style="max-width:120px;">
+          <div class="row-actions"><button class="btn btn-sm" onclick="saveS('terminal')">保存</button></div>
+          <div class="info-box">複数端末で使用する場合に受注番号の重複を防ぎます。必ず設定してください。（G01〜：会社PC、T01〜：タブレット、P01〜：個人端末）</div>
+        </div>
+      </div>
+      <div class="setting-row">
         <div class="setting-label">受注データ送信URL<div class="setting-sub">Apps Script（受注用）</div><div class="gs-status"><span class="gs-dot" id="gs-dot"></span><span id="gs-txt">未設定</span></div></div>
         <div class="setting-val"><input type="url" id="s-gsurl" placeholder="https://script.google.com/macros/s/…/exec"><div class="row-actions"><button class="btn btn-sm" onclick="saveS('gsurl')">保存</button><button class="btn btn-sm" onclick="testGS('gsurl')">接続テスト</button></div><div class="info-box">「受注を保存/送信」時に自動送信します。未設定の場合は確認ダイアログが表示されます。受注データ用スプレッドシートの「拡張機能」→「Apps Script」→「デプロイを管理」からコピーしたURLを設定してください。</div></div>
       </div>
@@ -469,7 +495,7 @@ textarea{resize:vertical;min-height:55px;}
 
 <script>
 let orders=[],products=[],clients=[];
-let settings={eventName:'',taxRate:10,defaultRate:0.45,gsUrl:'',masterUrl:'',clientUrl:'',clientGsUrl:'',defaultDelMonth:'',defaultDelTiming:'上旬',token:''};
+let settings={eventName:'',taxRate:10,defaultRate:0.45,gsUrl:'',masterUrl:'',clientUrl:'',clientGsUrl:'',defaultDelMonth:'',defaultDelTiming:'上旬',token:'',terminal:''};
 let rowId=0,shipMode='same',delMode='period',masterSrc='sheet',clientSrc='sheet';
 let currentClientId=null,editingOrderId=null,currentOrderNum=null,deleteTarget=null,currentListFilter='all';
 let orderCounters={};
@@ -499,7 +525,7 @@ function persist(){
 function generateOrderNum(orderDate){
   const en=settings.eventName||'';
   const safe=en.replace(/[^a-zA-Z0-9\u3040-\u9FFF]/g,'');
-  // 注文日から日付部分を取得
+  const terminal=settings.terminal||'';
   let ds;
   if(orderDate){
     const d=new Date(orderDate);
@@ -509,10 +535,11 @@ function generateOrderNum(orderDate){
     ds=(d.getMonth()+1).toString().padStart(2,'0')+d.getDate().toString().padStart(2,'0');
   }
   const prefix=safe?safe+'-'+ds:ds;
-  const key=prefix;
+  const terminalPart=terminal?'-'+terminal:'';
+  const key=prefix+terminalPart;
   if(!orderCounters[key])orderCounters[key]=110;
   orderCounters[key]++;
-  return prefix+'-'+orderCounters[key].toString().padStart(3,'0');
+  return prefix+terminalPart+'-'+orderCounters[key].toString().padStart(3,'0');
 }
 
 function buildMonthSelects(){
@@ -536,6 +563,7 @@ function applySettings(){
   document.getElementById('s-clienturl').value=settings.clientUrl||'';
   document.getElementById('s-clientgsurl').value=settings.clientGsUrl||'';
   document.getElementById('s-token').value=settings.token||'';
+  document.getElementById('s-terminal').value=settings.terminal||'';
   if(settings.defaultDelMonth){
     const sm=document.getElementById('s-del-month');if(sm)sm.value=settings.defaultDelMonth;
     const st=document.getElementById('s-del-timing');if(st)st.value=settings.defaultDelTiming||'上旬';
@@ -595,6 +623,7 @@ function saveS(key){
     settings.clientGsUrl=v;
   }
   else if(key==='token')settings.token=document.getElementById('s-token').value.trim();
+  else if(key==='terminal')settings.terminal=document.getElementById('s-terminal').value.trim().toUpperCase();
   else if(key==='deldft'){settings.defaultDelMonth=document.getElementById('s-del-month').value;settings.defaultDelTiming=document.getElementById('s-del-timing').value;applyDefaultDelivery();}
   persist();applySettings();alert('保存しました');
 }
@@ -753,10 +782,16 @@ function selectModel(id,model){
         if(stEl&&!stEl.value)stEl.value='特注素材';
       }else{
         const mi=document.getElementById('mat-manual-'+id);if(mi)mi.style.display='none';
+        // 特注素材をクリア
+        const stEl2=document.getElementById('st-'+id);
+        if(stEl2&&stEl2.value==='特注素材')stEl2.value='';
         fillPriceFromMat(id,document.getElementById('ac-inp-'+id)?.value.trim(),sel.value);
       }
     };
     matContainer.replaceChild(sel,oldMat);
+    // 型番変更時に任意入力欄をクリア
+    const stElReset=document.getElementById('st-'+id);
+    if(stElReset)stElReset.value='';
     if(mats.length===1)sel.value=mats[0];
   }
   const ci=document.getElementById('cat-'+id);if(ci)ci.value=prods[0]?.category||'';
@@ -830,6 +865,16 @@ function calcTotals(){
   document.getElementById('m-after').textContent=fmt(ar);
   document.getElementById('m-tax').textContent=fmt(tax);
   document.getElementById('m-total').textContent=fmt(total);
+  // 値引き・最終請求金額の更新
+  const discountInpEl=document.getElementById('discount-inp');
+  const discountAreaEl=document.getElementById('discount-area');
+  const finalEl=document.getElementById('m-final');
+  if(discountAreaEl&&discountAreaEl.style.display!=='none'&&discountInpEl&&finalEl){
+    const discountVal=parseInt(discountInpEl.value)||0;
+    const finalTotal=total+discountVal;
+    finalEl.textContent=fmt(finalTotal);
+    finalEl.style.color=finalTotal<0?'#e53935':'#1a1a1a';
+  }
 }
 
 function getRows(){
@@ -863,7 +908,11 @@ function buildOrderObject(isDraft,num){
   const rows=getRows();
   let sub=0,ar=0;rows.forEach(r=>{sub+=r.qty*r.price;ar+=r.sub;});
   const tax=Math.round(ar*(settings.taxRate/100)),total=Math.round(ar)+tax;
-  return{id:editingOrderId||Date.now(),orderNum:num||currentOrderNum||'',orderDate:document.getElementById('order-date').value,eventName:settings.eventName,company:document.getElementById('company').value.trim(),contactName:document.getElementById('contact-name').value,tel:document.getElementById('tel').value,email:document.getElementById('email').value,address:document.getElementById('address').value,shippingMode:shipMode,shipAddress:document.getElementById('ship-addr').value,staff:document.getElementById('staff').value.trim(),payment:document.getElementById('payment').value,payStatus:document.getElementById('pay-status').value,delivery:getDelivery(),rows,subtotal:Math.round(sub),afterRate:Math.round(ar),tax,total,notes:document.getElementById('notes').value,taxRate:settings.taxRate,isDraft:!!isDraft};
+  const discountArea=document.getElementById('discount-area');
+  const discountInp=document.getElementById('discount-inp');
+  const discountVal=discountArea&&discountArea.style.display!=='none'?(parseInt(discountInp?.value)||0):0;
+  const finalTotal=total+discountVal;
+  return{id:editingOrderId||Date.now(),orderNum:num||currentOrderNum||'',orderDate:document.getElementById('order-date').value,eventName:settings.eventName,company:document.getElementById('company').value.trim(),contactName:document.getElementById('contact-name').value,tel:document.getElementById('tel').value,email:document.getElementById('email').value,address:document.getElementById('address').value,shippingMode:shipMode,shipAddress:document.getElementById('ship-addr').value,staff:document.getElementById('staff').value.trim(),payment:document.getElementById('payment').value,payStatus:document.getElementById('pay-status').value,delivery:getDelivery(),rows,subtotal:Math.round(sub),afterRate:Math.round(ar),tax,total,notes:document.getElementById('notes').value,taxRate:settings.taxRate,discount:discountVal,finalTotal,isDraft:!!isDraft};
 }
 
 function saveDraft(){
@@ -899,6 +948,9 @@ function saveOrder(){
   if(!document.getElementById('payment').value){alert('お支払い方法を選択してください');return;}
   const num=currentOrderNum||(editingOrderId?orders.find(o=>o.id===editingOrderId)?.orderNum:null)||generateOrderNum(document.getElementById('order-date').value);
   const order=buildOrderObject(false,num);
+  if(!settings.terminal){
+    alert('端末識別子が設定されていません。\n設定タブで端末識別子を登録してください。');return;
+  }
   const sendErr=validateGasUrl(settings.gsUrl);
   if(settings.gsUrl&&sendErr){
     alert('受注データ送信URLの形式が正しくありません。\n設定タブでURLを確認してください。\n'+sendErr);return;
@@ -915,6 +967,10 @@ function resetForm(){
   setShip('same');document.getElementById('prod-rows').innerHTML='';rowId=0;
   editingOrderId=null;currentOrderNum=null;updateOrderNumBar(null);
   applyDefaultDelivery();calcTotals();addRow();document.getElementById('sync-status').textContent='';
+  const da=document.getElementById('discount-area');
+  const di=document.getElementById('discount-inp');
+  if(da)da.style.display='none';
+  if(di)di.value='';
 }
 
 function filterOrders(type){
@@ -945,7 +1001,13 @@ function renderList(){
 
 function loadOrderToForm(id,mode){
   const order=orders.find(o=>o.id===id);if(!order)return;showTab('form');
-  document.getElementById('order-date').value=mode==='edit'?(order.orderDate||''):'';document.getElementById('staff').value=order.staff||'';document.getElementById('company').value=order.company||'';document.getElementById('contact-name').value=order.contactName||'';document.getElementById('tel').value=order.tel||'';document.getElementById('email').value=order.email||'';document.getElementById('address').value=order.address||'';document.getElementById('ship-addr').value=order.shipAddress||'';setShip(order.shippingMode||'same');document.getElementById('payment').value=order.payment||'';document.getElementById('pay-status').value=order.payStatus||'';document.getElementById('notes').value=order.notes||'';
+  document.getElementById('order-date').value=mode==='edit'?(order.orderDate||''):'';document.getElementById('staff').value=order.staff||'';document.getElementById('company').value=order.company||'';document.getElementById('contact-name').value=order.contactName||'';document.getElementById('tel').value=order.tel||'';document.getElementById('email').value=order.email||'';document.getElementById('address').value=order.address||'';document.getElementById('ship-addr').value=order.shipAddress||'';setShip(order.shippingMode||'same');document.getElementById('payment').value=order.payment||'';
+  if(order.discount&&order.discount>0){
+    const da=document.getElementById('discount-area');
+    const di=document.getElementById('discount-inp');
+    if(da)da.style.display='block';
+    if(di)di.value=order.discount;
+  }document.getElementById('pay-status').value=order.payStatus||'';document.getElementById('notes').value=order.notes||'';
   const del=order.delivery||'';const isPeriod=['上旬','中旬','下旬'].some(p=>del.endsWith(p));
   if(isPeriod){setDel('period');const dm=document.getElementById('del-month');if(dm)dm.value=del.slice(0,-2);const dt=document.getElementById('del-timing');if(dt)dt.value=del.slice(-2);}
   else{setDel('date');document.getElementById('del-date').value=del;}
@@ -1101,9 +1163,9 @@ function executeDelete(){
 
 function exportCSV(){
   if(!orders.length){alert('受注データがありません');return;}
-  const hdr=['状態','受注番号','注文日','展示会名','会社名','ご担当者様名','電話番号','メールアドレス','住所','発送先','カテゴリー','型番','素材','サイズ','台帳備考','任意入力欄（石変更・空枠・支給など）','数量','上代単価(税抜)','掛け率','小計(掛け率後)','商品合計(税抜)','掛け率後合計','消費税率','消費税','請求金額(税込)','支払方法','支払状況','納品納期','特記事項','担当者名'];
+  const hdr=['状態','受注番号','注文日','展示会名','会社名','ご担当者様名','電話番号','メールアドレス','住所','発送先','カテゴリー','型番','素材','サイズ','台帳備考','任意入力欄（石変更・空枠・支給など）','数量','上代単価(税抜)','掛け率','小計(掛け率後)','商品合計(税抜)','掛け率後合計','消費税率','消費税','請求金額(税込)','値引き額','最終請求金額','支払方法','支払状況','納品納期','特記事項','担当者名'];
   const rows=[hdr];
-  orders.forEach(o=>{const sa=o.shippingMode==='same'?o.address:o.shipAddress;o.rows.forEach((r,i)=>{rows.push([i===0?(o.isDraft?'一時保存':'確定'):'',i===0?(o.orderNum||''):'',i===0?o.orderDate:'',i===0?(o.eventName||''):'',i===0?o.company:'',i===0?(o.contactName||''):'',i===0?(o.tel||''):'',i===0?(o.email||''):'',i===0?(o.address||''):'',i===0?(sa||''):'',r.category||'',r.model,r.mat||'',r.size||'',r.memo||'',r.stone||'',r.qty,r.price,r.rr,r.sub,i===0?o.subtotal:'',i===0?o.afterRate:'',i===0?o.taxRate+'%':'',i===0?o.tax:'',i===0?o.total:'',i===0?o.payment:'',i===0?o.payStatus||'':'',i===0?o.delivery||'':'',i===0?o.notes||'':'',i===0?o.staff:'']);});});
+  orders.forEach(o=>{const sa=o.shippingMode==='same'?o.address:o.shipAddress;o.rows.forEach((r,i)=>{rows.push([i===0?(o.isDraft?'一時保存':'確定'):'',i===0?(o.orderNum||''):'',i===0?o.orderDate:'',i===0?(o.eventName||''):'',i===0?o.company:'',i===0?(o.contactName||''):'',i===0?(o.tel||''):'',i===0?(o.email||''):'',i===0?(o.address||''):'',i===0?(sa||''):'',r.category||'',r.model,r.mat||'',r.size||'',r.memo||'',r.stone||'',r.qty,r.price,r.rr,r.sub,i===0?o.subtotal:'',i===0?o.afterRate:'',i===0?o.taxRate+'%':'',i===0?o.tax:'',i===0?o.total:'',i===0?(o.discount||''):'',i===0?(o.finalTotal||''):'',i===0?o.payment:'',i===0?o.payStatus||'':'',i===0?o.delivery||'':'',i===0?o.notes||'':'',i===0?o.staff:'']);});});
   const bom='\uFEFF';const csv=bom+rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='受注データ_'+new Date().toLocaleDateString('ja-JP').replace(/\//g,'')+'.csv';a.click();
 }
@@ -1180,6 +1242,19 @@ function importClientCSV(input){
     alert(added+'件の取引先を取り込みました。');
   };
   reader.readAsText(file,'UTF-8');
+}
+
+function toggleDiscount(){
+  const area=document.getElementById('discount-area');
+  const inp=document.getElementById('discount-inp');
+  if(area.style.display==='none'){
+    area.style.display='block';
+    inp.focus();
+  }else{
+    area.style.display='none';
+    inp.value='';
+    calcTotals();
+  }
 }
 </script>
 
